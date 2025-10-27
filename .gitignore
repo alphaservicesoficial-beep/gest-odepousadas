@@ -1,0 +1,23 @@
+# Diretórios de dependências
+node_modules/
+frontend/node_modules/
+backend/.venv/
+
+# Ambientes virtuais
+venv/
+.venv/
+
+# Cache de builds e artefatos
+dist/
+build/
+coverage/
+__pycache__/
+*.py[cod]
+
+# Sistema operacional / editor
+.DS_Store
+Thumbs.db
+*.log
+/.idea/
+/.vscode/
+

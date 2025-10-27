@@ -1,0 +1,243 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+.surface-input {
+  @apply w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition focus:border-primary focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200;
+}
+
+.surface-input {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(37, 99, 235, 0.6) rgba(15, 23, 42, 0.2);
+}
+
+select.surface-input::-webkit-scrollbar,
+.surface-input::-webkit-scrollbar {
+  width: 8px;
+}
+
+select.surface-input::-webkit-scrollbar-track,
+.surface-input::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.12);
+  border-radius: 9999px;
+}
+
+select.surface-input::-webkit-scrollbar-thumb,
+.surface-input::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    rgba(37, 99, 235, 0.8),
+    rgba(14, 165, 233, 0.8)
+  );
+  border-radius: 9999px;
+}
+
+select.surface-input::-webkit-scrollbar-thumb:hover,
+.surface-input::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    rgba(37, 99, 235, 1),
+    rgba(14, 165, 233, 1)
+  );
+}
+
+.surface-section {
+  @apply rounded-2xl border border-slate-200 bg-white text-slate-700 transition-colors dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-200;
+}
+
+.surface-table-head {
+  @apply bg-slate-100 text-xs uppercase text-slate-500 dark:bg-slate-900/70 dark:text-slate-400;
+}
+
+.surface-table-row {
+  @apply hover:bg-slate-100 dark:hover:bg-slate-900/40;
+}
+
+.surface-toolbar {
+  @apply rounded-lg border border-slate-200 bg-white text-slate-700 transition-colors dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200;
+}
+
+.text-emphasis {
+  @apply text-slate-800 dark:text-slate-200;
+}
+
+.text-muted {
+  @apply text-slate-600 dark:text-slate-400;
+}
+
+.text-muted-strong {
+  @apply text-slate-700 dark:text-slate-300;
+}
+
+.text-muted-soft {
+  @apply text-slate-500 dark:text-slate-500;
+}
+
+html:not(.dark) .bg-slate-950 {
+  background-color: #ffffff !important;
+}
+
+html:not(.dark) .bg-slate-900\/80 {
+  background-color: rgba(15, 23, 42, 0.05) !important;
+}
+
+html:not(.dark) .bg-slate-900\/70,
+html:not(.dark) .bg-slate-900\/60,
+html:not(.dark) .bg-slate-900\/50,
+html:not(.dark) .bg-slate-900\/40 {
+  background-color: rgba(15, 23, 42, 0.04) !important;
+}
+
+html:not(.dark) .bg-slate-950\/80,
+html:not(.dark) .bg-slate-950\/60,
+html:not(.dark) .bg-slate-950\/40 {
+  background-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+html:not(.dark) .border-slate-800,
+html:not(.dark) .border-slate-700 {
+  border-color: #e2e8f0 !important;
+}
+
+html:not(.dark) .text-slate-400,
+html:not(.dark) .text-slate-300,
+html:not(.dark) .text-slate-200 {
+  color: #334155 !important;
+}
+
+html:not(.dark) .hover\:bg-slate-900\/40:hover,
+html:not(.dark) .hover\:bg-slate-900\/50:hover,
+html:not(.dark) .hover\:bg-slate-900\/60:hover {
+  background-color: #f1f5f9 !important;
+}
+
+html:not(.dark) .hover\:bg-slate-800:hover {
+  background-color: #f1f5f9 !important;
+}
+
+html:not(.dark) .hover\:bg-slate-800\/60:hover {
+  background-color: #f1f5f9 !important;
+}
+
+html:not(.dark) .text-slate-200 {
+  color: #1e293b !important;
+}
+
+html:not(.dark) .text-slate-300 {
+  color: #334155 !important;
+}
+
+html:not(.dark) .text-slate-400 {
+  color: #475569 !important;
+}
+
+html:not(.dark) .text-slate-500 {
+  color: #64748b !important;
+}
+
+html:not(.dark) .text-white,
+html:not(.dark) .dark\:text-slate-200 {
+  color: #0f172a !important;
+}
+
+html:not(.dark) .btn-primary {
+  color: #ffffff !important;
+}
+
+html:not(.dark) table {
+  color: #1f2937;
+}
+
+html:not(.dark) th {
+  color: #0f172a;
+}
+
+html:not(.dark) tbody td {
+  color: #1f2937;
+}
+
+html:not(.dark) .surface-table-head th {
+  color: #0f172a;
+}
+
+html:not(.dark) button.border-slate-800,
+html:not(.dark) button.border-slate-700,
+html:not(.dark) .border.border-slate-800,
+html:not(.dark) .border.border-slate-700 {
+  border-color: #cbd5e1 !important;
+  color: #1f2937 !important;
+  background-color: #ffffff !important;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.05);
+}
+
+html:not(.dark) button.border-slate-800:hover,
+html:not(.dark) button.border-slate-700:hover {
+  color: #1d4ed8 !important;
+  border-color: rgba(59, 130, 246, 0.6) !important;
+  background-color: rgba(59, 130, 246, 0.08) !important;
+}
+
+html:not(.dark) button.border-rose-600\/40 {
+  border-color: rgba(244, 63, 94, 0.6) !important;
+  color: #b91c1c !important;
+  background-color: #fff !important;
+}
+
+html:not(.dark) button.border-rose-600\/40:hover {
+  background-color: rgba(244, 63, 94, 0.1) !important;
+  color: #9f1239 !important;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center rounded-lg font-medium transition focus:outline-none focus:ring-2 focus:ring-primary/30;
+}
+
+.btn-md {
+  @apply px-4 py-2 text-sm;
+}
+
+.btn-sm {
+  @apply px-3 py-1 text-xs uppercase tracking-wide;
+}
+
+.btn-primary {
+  @apply btn btn-md bg-primary text-white shadow-sm hover:bg-primary/90;
+}
+
+.btn-secondary {
+  @apply btn btn-md border border-slate-300 bg-white text-slate-700 hover:border-primary hover:text-primary hover:bg-primary/5 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200;
+}
+
+.btn-outline-danger {
+  @apply btn btn-md border border-rose-500/70 text-rose-600 hover:bg-rose-500/10 hover:text-rose-700 dark:text-rose-300;
+}
+
+.btn-outline-info {
+  @apply btn btn-md border border-sky-500/70 text-sky-600 hover:bg-sky-500/10 hover:text-sky-700 dark:text-sky-300;
+}
+
+.btn-outline-warning {
+  @apply btn btn-md border border-amber-500/70 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700 dark:text-amber-300;
+}
+
+.btn-outline-success {
+  @apply btn btn-md border border-emerald-500/70 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-700 dark:text-emerald-300;
+}
+
+.chip-muted {
+  @apply inline-flex items-center rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-600 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300;
+}
+
+.chip-muted:hover {
+  @apply border-primary text-primary;
+}
