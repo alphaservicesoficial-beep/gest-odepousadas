@@ -1,4 +1,4 @@
-# Inn Management Tool
+# Gerenciador de pousadas
 
 Aplicativo web completo para gestão operacional de pequenas pousadas, desenvolvido com React (TypeScript), Tailwind CSS, FastAPI e Firestore.
 
