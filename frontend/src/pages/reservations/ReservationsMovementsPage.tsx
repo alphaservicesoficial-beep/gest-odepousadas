@@ -1,9 +1,12 @@
-import { X } from "lucide-react";
-import { useMemo, useState } from "react";
-
+import { useEffect, useState, useMemo } from "react";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { db } from "../../lib/firebase"; // Certifique-se de que o caminho está correto
 import Card from "../../components/ui/Card";
 import StatusBadge from "../../components/ui/StatusBadge";
+import { X } from 'lucide-react';
 
+
+// Definindo tipos de Movimentos
 type Movement = {
   id: string;
   guest: string;
@@ -11,33 +14,7 @@ type Movement = {
   guestsCount: number;
   checkIn?: string;
   checkOut?: string;
-};
-
-const MOCK_MOVEMENTS: { checkins: Movement[]; checkouts: Movement[] } = {
-  checkins: [
-    {
-      id: "RES-207",
-      guest: "Ednara Morinho",
-      room: "207",
-      checkIn: "11/07/2025",
-      guestsCount: 3,
-    },
-    {
-      id: "RES-100",
-      guest: "Maria Silva",
-      room: "203",
-      checkIn: "13/10/2025",
-      guestsCount: 2,
-    },
-    {
-      id: "RES-105",
-      guest: "João Souza",
-      room: "305",
-      checkIn: "13/10/2025",
-      guestsCount: 1,
-    },
-  ],
-  checkouts: [],
+  reservationStatus?: string;
 };
 
 const PERIODS = [
@@ -59,7 +36,10 @@ function ReservationsMovementsPage() {
   const [activePeriod, setActivePeriod] = useState("today");
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
   const [guestCount, setGuestCount] = useState<(typeof GUEST_OPTIONS)[number]>(1);
-
+  const [checkinData, setCheckinData] = useState<Movement[]>([]);
+  const [checkoutData, setCheckoutData] = useState<Movement[]>([]);
+  
+  // Formatação do preço
   const formattedTotal = useMemo(() => {
     const total = GUEST_PRICE[guestCount] ?? 0;
     return total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -67,6 +47,30 @@ function ReservationsMovementsPage() {
 
   const openPricingModal = () => setIsPricingModalOpen(true);
   const closePricingModal = () => setIsPricingModalOpen(false);
+
+  // Função para carregar dados do Firebase para check-in e check-out
+ useEffect(() => {
+  const fetchMovements = async () => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/movements?period=${activePeriod}`);
+      const data = await response.json();
+
+      setCheckinData(data.checkins || []);
+      setCheckoutData(data.checkouts || []);
+    } catch (error) {
+      console.error("Erro ao carregar movimentos:", error);
+    }
+  };
+
+  fetchMovements();
+}, [activePeriod]);
+
+
+  // Função para calcular o total baseado no número de hóspedes
+  const handleCreateReservation = async (event: React.FormEvent) => {
+    event.preventDefault();
+    alert(`Reserva confirmada! Total: ${formattedTotal}`);
+  };
 
   return (
     <div className="space-y-6">
@@ -96,14 +100,19 @@ function ReservationsMovementsPage() {
         <div className="grid gap-6 lg:grid-cols-2">
           <Card title="Próximos check-ins" description="Reservas confirmadas para chegada">
             <ul className="space-y-3">
-              {MOCK_MOVEMENTS.checkins.map((item) => (
+              {checkinData.length === 0 && (
+                <li className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-center text-sm text-muted dark:border-slate-700 dark:bg-slate-900/40">
+                  Nenhum check-in programado para o período selecionado.
+                </li>
+              )}
+              {checkinData.map((item) => (
                 <li
                   key={item.id}
                   className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-muted-strong transition dark:border-slate-800 dark:bg-slate-900/60"
                 >
                   <div className="flex items-center justify-between">
                     <p className="font-semibold text-emphasis">{item.guest}</p>
-                    <StatusBadge label={item.id} status="info" />
+                    <StatusBadge label={item.reservationStatus || "Check-in"} status="success" />
                   </div>
                   <p className="mt-2 text-xs text-muted">
                     Quarto {item.room} • {item.checkIn ?? "--"} • {item.guestsCount}{" "}
@@ -116,19 +125,19 @@ function ReservationsMovementsPage() {
 
           <Card title="Próximos check-outs" description="Reservas previstas para saída">
             <ul className="space-y-3">
-              {MOCK_MOVEMENTS.checkouts.length === 0 && (
+              {checkoutData.length === 0 && (
                 <li className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-center text-sm text-muted dark:border-slate-700 dark:bg-slate-900/40">
                   Nenhum check-out programado para o período selecionado.
                 </li>
               )}
-              {MOCK_MOVEMENTS.checkouts.map((item) => (
+              {checkoutData.map((item) => (
                 <li
                   key={item.id}
                   className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-muted-strong transition dark:border-slate-800 dark:bg-slate-900/60"
                 >
                   <div className="flex items-center justify-between">
                     <p className="font-semibold text-emphasis">{item.guest}</p>
-                    <StatusBadge label={item.id} status="warning" />
+                    <StatusBadge label={item.reservationStatus || "Check-out"} status="warning" />
                   </div>
                   <p className="mt-2 text-xs text-muted">
                     Quarto {item.room} • {item.checkOut ?? "--"} • {item.guestsCount}{" "}
@@ -141,13 +150,7 @@ function ReservationsMovementsPage() {
         </div>
       </Card>
 
-      <Card title="Ferramentas rápidas" description="Ações disponíveis diretamente do centro de reservas.">
-        <div className="flex flex-wrap gap-3">
-          <button className="btn-secondary">Gerar comprovante de estadia</button>
-          <button className="btn-secondary">Consultar comprovante de estadia</button>
-        </div>
-      </Card>
-
+      {/* Modal de Criação de Reserva */}
       {isPricingModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-6 backdrop-blur-sm">
           <div className="w-full max-w-xs rounded-2xl border border-slate-200 bg-white p-6 text-slate-700 shadow-2xl transition-colors dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 sm:max-w-sm">
@@ -197,7 +200,9 @@ function ReservationsMovementsPage() {
               <button className="btn-secondary" onClick={closePricingModal}>
                 Cancelar
               </button>
-              <button className="btn-primary">Adicionar reserva</button>
+              <button type="submit" onClick={handleCreateReservation} className="btn-primary">
+                Adicionar reserva
+              </button>
             </div>
           </div>
         </div>

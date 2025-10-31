@@ -1,271 +1,323 @@
-import { useState } from "react";
-
+import { useState, useEffect } from "react";
 import Card from "../../components/ui/Card";
+import { Trash2, Plus, Loader2 } from "lucide-react";
 
-const ACCORDION_ITEMS = [
-  {
-    key: "property",
-    title: "Dados da propriedade",
-    content: (
-      <div className="grid gap-4 md:grid-cols-2">
-        <label className="text-sm text-slate-300">
-          Nome da pousada
-          <input
-            type="text"
-            className="mt-1 w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-primary focus:outline-none"
-            placeholder="Pousada Mar Azul"
-          />
-        </label>
-        <label className="text-sm text-slate-300">
-          Telefone
-          <input
-            type="tel"
-            className="mt-1 w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-primary focus:outline-none"
-            placeholder="(11) 99999-8888"
-          />
-        </label>
-        <label className="text-sm text-slate-300 md:col-span-2">
-          Endereço
-          <input
-            type="text"
-            className="mt-1 w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-primary focus:outline-none"
-            placeholder="Rua das Flores, 123"
-          />
-        </label>
-        <div className="md:col-span-2">
-          <p className="text-sm text-slate-400">
-            Uploads (logo, assinatura, plano de fundo)
-          </p>
-          <div className="mt-2 flex flex-wrap gap-3">
-            <button className="rounded-lg border border-slate-800 px-4 py-2 text-sm text-slate-200 transition hover:border-primary hover:text-primary">
-              Enviar logo
-            </button>
-            <button className="rounded-lg border border-slate-800 px-4 py-2 text-sm text-slate-200 transition hover:border-primary hover:text-primary">
-              Enviar assinatura
-            </button>
-            <button className="rounded-lg border border-slate-800 px-4 py-2 text-sm text-slate-200 transition hover:border-primary hover:text-primary">
-              Enviar plano de fundo
-            </button>
-          </div>
-        </div>
-      </div>
-    ),
-  },
-  {
-    key: "rooms",
-    title: "Detalhes globais de quartos",
-    content: (
-      <div className="grid gap-4 md:grid-cols-2">
-        <div>
-          <p className="text-sm font-medium text-slate-200">Amenidades</p>
-          <div className="mt-3 space-y-2">
-            <div className="flex items-center justify-between rounded-lg border border-slate-800 px-3 py-2 text-sm">
-              <span>Wi-Fi</span>
-              <button className="text-xs text-primary">Editar</button>
-            </div>
-            <button className="w-full rounded-lg border border-dashed border-slate-700 px-4 py-2 text-sm text-slate-300 hover:border-primary hover:text-primary">
-              Nova amenidade
-            </button>
-          </div>
-        </div>
-        <div>
-          <p className="text-sm font-medium text-slate-200">Tipos de quarto</p>
-          <div className="mt-3 space-y-2">
-            <div className="flex items-center justify-between rounded-lg border border-slate-800 px-3 py-2 text-sm">
-              <span>Deluxe</span>
-              <button className="text-xs text-primary">Editar</button>
-            </div>
-            <button className="w-full rounded-lg border border-dashed border-slate-700 px-4 py-2 text-sm text-slate-300 hover:border-primary hover:text-primary">
-              Novo tipo
-            </button>
-          </div>
-        </div>
-        <div className="md:col-span-2">
-          <p className="text-sm font-medium text-slate-200">
-            Formas de pagamento aceitas
-          </p>
-          <div className="mt-2 flex flex-wrap gap-4 text-sm text-slate-300">
-            <label className="flex items-center gap-2">
-              <input type="checkbox" defaultChecked /> Cartão de crédito
-            </label>
-            <label className="flex items-center gap-2">
-              <input type="checkbox" defaultChecked /> PIX
-            </label>
-            <label className="flex items-center gap-2">
-              <input type="checkbox" /> Dinheiro
-            </label>
-          </div>
-        </div>
-      </div>
-    ),
-  },
-  {
-    key: "proximity",
-    title: "Gestão de proximidades",
-    content: (
-      <div className="space-y-3">
-        <p className="text-sm text-slate-300">
-          Categorias de pontos de interesse (Lucide Icons disponíveis para cada
-          categoria).
-        </p>
-        <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-200">
-          <p className="font-medium">Praias</p>
-          <p className="text-xs text-slate-400">Ícone atual: `Waves`</p>
-        </div>
-        <button className="rounded-lg border border-dashed border-slate-700 px-4 py-2 text-sm text-slate-300 hover:border-primary hover:text-primary">
-          Nova categoria
-        </button>
-      </div>
-    ),
-  },
-  {
-    key: "users",
-    title: "Usuários, convites e perfis",
-    content: (
-      <div className="space-y-4">
-        <div className="flex flex-wrap gap-3">
-          <button className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white shadow hover:bg-primary/90">
-            Convidar novo usuário
-          </button>
-          <button className="rounded-lg border border-slate-800 px-4 py-2 text-sm text-slate-200 hover:border-primary hover:text-primary">
-            Gerenciar papéis
-          </button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-800 text-left text-sm">
-            <thead className="bg-slate-900/70 text-xs uppercase text-slate-400">
-              <tr>
-                <th className="px-4 py-3">Nome</th>
-                <th className="px-4 py-3">E-mail</th>
-                <th className="px-4 py-3">Perfil</th>
-                <th className="px-4 py-3 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800 text-slate-200">
-              <tr className="hover:bg-slate-900/40">
-                <td className="px-4 py-3">Usuário Demo</td>
-                <td className="px-4 py-3">demo@inn.app</td>
-                <td className="px-4 py-3">Gerente</td>
-                <td className="px-4 py-3 text-right">
-                  <button className="rounded border border-slate-700 px-3 py-1 text-xs uppercase tracking-wide text-slate-300 hover:border-primary hover:text-primary">
-                    Editar permissões
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    ),
-  },
-  {
-    key: "notifications",
-    title: "Notificações",
-    content: (
-      <div className="grid gap-4 md:grid-cols-2">
-        <label className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-slate-200">
-          <span>E-mail</span>
-          <input type="checkbox" defaultChecked />
-        </label>
-        <label className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-slate-200">
-          <span>In-app</span>
-          <input type="checkbox" defaultChecked />
-        </label>
-        <div className="md:col-span-2">
-          <p className="text-sm text-slate-400">
-            Planos para controles granulares por evento.
-          </p>
-        </div>
-      </div>
-    ),
-  },
-  {
-    key: "system",
-    title: "Saúde do sistema e logs",
-    content: (
-      <div className="space-y-3">
-        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
-          Sistema operacional • OK
-        </div>
-        <div className="rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-slate-300">
-          Backups automáticos: Diários às 23h00
-        </div>
-        <button className="rounded-lg border border-slate-800 px-4 py-2 text-sm text-slate-200 hover:border-primary hover:text-primary">
-          Acessar logs
-        </button>
-      </div>
-    ),
-  },
-  {
-    key: "integrations",
-    title: "APIs e integrações",
-    content: (
-      <div className="rounded-lg border border-dashed border-slate-700 bg-slate-900/40 px-4 py-6 text-sm text-slate-300">
-        <p>
-          Espaço reservado para integrações futuras (Channel Managers, Gateways
-          de Pagamento etc.).
-        </p>
-      </div>
-    ),
-  },
-  {
-    key: "backup",
-    title: "Backup e restauração",
-    content: (
-      <div className="space-y-3 text-sm text-slate-300">
-        <div className="rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3">
-          <p>Último backup automático: 12/10/2025 23:00</p>
-          <p>Próximo agendado: 13/10/2025 23:00</p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <button className="rounded-lg border border-slate-800 px-4 py-2 text-sm text-slate-200 hover:border-primary hover:text-primary">
-            Iniciar backup manual
-          </button>
-          <button className="rounded-lg border border-slate-800 px-4 py-2 text-sm text-slate-200 hover:border-primary hover:text-primary">
-            Restaurar backup
-          </button>
-        </div>
-      </div>
-    ),
-  },
-];
+interface SettingsData {
+  propertyName: string;
+  phone: string;
+  address: string;
+  currency: string;
+  checkInTime: string;
+  checkOutTime: string;
+  cancellationPolicy: string;
+  wifiPassword: string;
+  notes: string;
+}
+
+interface User {
+  id?: string;
+  name: string;
+  email: string;
+  password?: string;
+  role: string;
+}
 
 function SettingsPage() {
   const [openItem, setOpenItem] = useState<string | null>("property");
+  const [settings, setSettings] = useState<SettingsData>({
+    propertyName: "",
+    phone: "",
+    address: "",
+    currency: "BRL",
+    checkInTime: "14:00",
+    checkOutTime: "12:00",
+    cancellationPolicy: "Cancelamentos devem ser informados com 48h de antecedência.",
+    wifiPassword: "",
+    notes: "",
+  });
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [newUser, setNewUser] = useState<User>({
+    name: "",
+    email: "",
+    password: "",
+    role: "camareira",
+  });
+  const [showModal, setShowModal] = useState(false);
+
+  // 🔹 Carrega dados iniciais
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [settingsRes, usersRes] = await Promise.all([
+          fetch("http://localhost:8000/api/settings"),
+          fetch("http://localhost:8000/api/settings/users"),
+        ]);
+        const settingsData = await settingsRes.json();
+        const usersData = await usersRes.json();
+        setSettings(settingsData);
+        setUsers(usersData);
+      } catch (error) {
+        console.error("Erro ao carregar configurações:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  // 🔸 Salvar configurações
+  async function handleSaveSettings() {
+    try {
+      setSaving(true);
+      const res = await fetch("http://localhost:8000/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings),
+      });
+      if (!res.ok) throw new Error("Erro ao salvar configurações");
+      alert("Configurações salvas com sucesso!");
+    } catch (error) {
+      alert("Erro ao salvar as configurações.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // 🔸 Criar novo usuário
+  async function handleAddUser() {
+    if (!newUser.name || !newUser.email || !newUser.password) {
+      alert("Preencha nome, e-mail e senha!");
+      return;
+    }
+    try {
+      const res = await fetch("http://localhost:8000/api/settings/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newUser),
+      });
+      if (!res.ok) throw new Error("Erro ao adicionar usuário");
+      const updated = await fetch("http://localhost:8000/api/settings/users").then((r) => r.json());
+      setUsers(updated);
+      setShowModal(false);
+      setNewUser({ name: "", email: "", password: "", role: "camareira" });
+    } catch (error) {
+      alert("Erro ao adicionar usuário");
+    }
+  }
+
+  // 🔸 Excluir usuário
+  async function handleDeleteUser(id?: string) {
+    if (!id) return;
+    if (!confirm("Tem certeza que deseja excluir este usuário?")) return;
+    try {
+      await fetch(`http://localhost:8000/api/settings/users/${id}`, { method: "DELETE" });
+      setUsers(users.filter((u) => u.id !== id));
+    } catch (error) {
+      alert("Erro ao excluir usuário.");
+    }
+  }
+
+  if (loading)
+    return (
+      <div className="flex justify-center items-center h-[60vh] text-slate-400">
+        <Loader2 className="animate-spin mr-2" /> Carregando configurações...
+      </div>
+    );
 
   return (
     <div className="space-y-6">
       <Card
         title="Configurações do sistema"
-        description="Ajuste todas as preferências da propriedade."
+        description="Ajuste as preferências da propriedade e gerencie usuários."
       >
         <div className="space-y-4">
-          {ACCORDION_ITEMS.map((item) => (
-            <div
-              key={item.key}
-              className="rounded-2xl border border-slate-800 bg-slate-900/60"
+          {/* 🔹 Aba de Configurações da Pousada */}
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/60">
+            <button
+              onClick={() => setOpenItem(openItem === "property" ? null : "property")}
+              className="flex w-full justify-between px-5 py-4 text-left font-semibold text-slate-200 hover:text-primary"
             >
-              <button
-                type="button"
-                onClick={() =>
-                  setOpenItem((prev) => (prev === item.key ? null : item.key))
-                }
-                className="flex w-full items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-200 hover:text-primary"
-              >
-                {item.title}
-                <span className="text-xs uppercase text-slate-500">
-                  {openItem === item.key ? "Ocultar" : "Exibir"}
-                </span>
-              </button>
-              {openItem === item.key && (
-                <div className="border-t border-slate-800 px-5 py-4 text-sm">
-                  {item.content}
+              Dados da propriedade
+              <span className="text-xs uppercase text-slate-500">
+                {openItem === "property" ? "Ocultar" : "Exibir"}
+              </span>
+            </button>
+
+            {openItem === "property" && (
+              <div className="border-t border-slate-800 px-5 py-4 grid gap-4 md:grid-cols-2">
+                <input
+                  placeholder="Nome da pousada"
+                  value={settings.propertyName}
+                  onChange={(e) => setSettings({ ...settings, propertyName: e.target.value })}
+                  className="surface-input"
+                />
+                <input
+                  placeholder="Telefone"
+                  value={settings.phone}
+                  onChange={(e) => setSettings({ ...settings, phone: e.target.value })}
+                  className="surface-input"
+                />
+                <input
+                  placeholder="Endereço completo"
+                  value={settings.address}
+                  onChange={(e) => setSettings({ ...settings, address: e.target.value })}
+                  className="surface-input md:col-span-2"
+                />
+                <select
+                  value={settings.currency}
+                  onChange={(e) => setSettings({ ...settings, currency: e.target.value })}
+                  className="surface-input"
+                >
+                  <option value="BRL">Real (R$)</option>
+                  <option value="USD">Dólar ($)</option>
+                  <option value="EUR">Euro (€)</option>
+                </select>
+                <input
+                  type="time"
+                  value={settings.checkInTime}
+                  onChange={(e) => setSettings({ ...settings, checkInTime: e.target.value })}
+                  className="surface-input"
+                  placeholder="Horário de Check-in"
+                />
+                <input
+                  type="time"
+                  value={settings.checkOutTime}
+                  onChange={(e) => setSettings({ ...settings, checkOutTime: e.target.value })}
+                  className="surface-input"
+                  placeholder="Horário de Check-out"
+                />
+                <textarea
+                  value={settings.cancellationPolicy}
+                  onChange={(e) => setSettings({ ...settings, cancellationPolicy: e.target.value })}
+                  className="surface-input md:col-span-2 h-24"
+                  placeholder="Política de cancelamento"
+                />
+                <input
+                  placeholder="Senha do Wi-Fi"
+                  value={settings.wifiPassword}
+                  onChange={(e) => setSettings({ ...settings, wifiPassword: e.target.value })}
+                  className="surface-input"
+                />
+                <textarea
+                  placeholder="Notas adicionais (ex: lembretes internos)"
+                  value={settings.notes}
+                  onChange={(e) => setSettings({ ...settings, notes: e.target.value })}
+                  className="surface-input md:col-span-2 h-20"
+                />
+
+                <div className="md:col-span-2 flex justify-end mt-3">
+                  <button
+                    onClick={handleSaveSettings}
+                    disabled={saving}
+                    className="btn-primary flex items-center"
+                  >
+                    {saving && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
+                    Salvar configurações
+                  </button>
                 </div>
-              )}
-            </div>
-          ))}
+              </div>
+            )}
+          </div>
+
+          {/* 🔹 Aba de Usuários */}
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/60">
+            <button
+              onClick={() => setOpenItem(openItem === "users" ? null : "users")}
+              className="flex w-full justify-between px-5 py-4 text-left font-semibold text-slate-200 hover:text-primary"
+            >
+              Usuários, convites e perfis
+              <span className="text-xs uppercase text-slate-500">
+                {openItem === "users" ? "Ocultar" : "Exibir"}
+              </span>
+            </button>
+
+            {openItem === "users" && (
+              <div className="border-t border-slate-800 px-5 py-4 space-y-4">
+                <div className="flex justify-end">
+                  <button className="btn-primary flex items-center" onClick={() => setShowModal(true)}>
+                    <Plus className="h-4 w-4 mr-2" /> Novo usuário
+                  </button>
+                </div>
+
+                <table className="min-w-full divide-y divide-slate-800 text-sm text-slate-200">
+                  <thead className="bg-slate-900/50 text-xs uppercase text-slate-400">
+                    <tr>
+                      <th className="px-4 py-2">Nome</th>
+                      <th className="px-4 py-2">E-mail</th>
+                      <th className="px-4 py-2">Função</th>
+                      <th className="px-4 py-2 text-right">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((u) => (
+                      <tr key={u.id} className="border-b border-slate-800 hover:bg-slate-900/40">
+                        <td className="px-4 py-3">{u.name}</td>
+                        <td className="px-4 py-3">{u.email}</td>
+                        <td className="px-4 py-3 capitalize">{u.role}</td>
+                        <td className="px-4 py-3 text-right">
+                          <button onClick={() => handleDeleteUser(u.id)} className="text-red-400 hover:text-red-600">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       </Card>
+
+      {/* 🔹 Modal Novo Usuário */}
+      {showModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-50">
+          <div className="bg-slate-900 p-6 rounded-xl w-full max-w-md border border-slate-700 text-white">
+            <h2 className="text-lg font-semibold mb-4">Adicionar novo usuário</h2>
+            <div className="space-y-3">
+              <input
+                placeholder="Nome completo"
+                value={newUser.name}
+                onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                className="surface-input w-full"
+              />
+              <input
+                placeholder="E-mail"
+                type="email"
+                value={newUser.email}
+                onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                className="surface-input w-full"
+              />
+              <input
+                placeholder="Senha"
+                type="password"
+                value={newUser.password}
+                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                className="surface-input w-full"
+              />
+              <select
+                value={newUser.role}
+                onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                className="surface-input w-full"
+              >
+                <option value="camareira">Camareira</option>
+                <option value="recepcionista">Recepcionista</option>
+                <option value="admin">Administrador</option>
+              </select>
+            </div>
+            <div className="flex justify-end mt-5 gap-3">
+              <button className="btn-secondary" onClick={() => setShowModal(false)}>
+                Cancelar
+              </button>
+              <button className="btn-primary" onClick={handleAddUser}>
+                Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
