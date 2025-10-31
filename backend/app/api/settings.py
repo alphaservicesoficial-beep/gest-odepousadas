@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Body
-from app.core.firebase import db, auth
+from app.core.firebase import db
 from google.cloud import firestore
 
 router = APIRouter()
