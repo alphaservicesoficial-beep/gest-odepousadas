@@ -3,6 +3,8 @@ import Card from "../../components/ui/Card";
 import { KpiCard } from "../../components/ui/KpiCard";
 import StatusBadge from "../../components/ui/StatusBadge";
 
+const baseUrl = "https://pousada-backend-iccs.onrender.com/api";
+
 interface FinancialData {
   kpis: {
     grossRevenue: string;
@@ -25,7 +27,7 @@ function FinancialDashboardPage() {
     const fetchFinancial = async () => {
       try {
         setLoading(true);
-        const res = await fetch("http://localhost:8000/api/financial-dashboard");
+        const res = await fetch(`${baseUrl}/financial-dashboard`);
         if (!res.ok) throw new Error("Erro ao carregar dados financeiros");
         const json = await res.json();
         setData(json);

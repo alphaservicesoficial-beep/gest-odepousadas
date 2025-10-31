@@ -25,7 +25,8 @@ import {
   // -----------------------------------------------------------------------
   // 💡 TIPAGEM E DADOS DE QUARTOS (BASEADO NO SEU INPUT)
   // -----------------------------------------------------------------------
-  
+  const baseUrl = "https://pousada-backend-iccs.onrender.com/api";
+
   type Room = {
       id: string;
       identifier: string;
@@ -165,7 +166,7 @@ const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
       // setCompanies([{ id: "1", name: "Simulada", cnpj: "00000000000101", mainContact: "Contato", email: "a@b.com", phone: "11999999999", checkIn: "2025-10-01", roomNumber: "105" }]);
       
       try {
-          const response = await fetch("http://127.0.0.1:8000/api/companies");
+          const response = await fetch(`${baseUrl}/companies`);
 const data = await response.json();
 setCompanies(data);
 
@@ -185,7 +186,7 @@ setCompanies(data);
       try {
         const currentRoomId = isEditing && form.roomId ? form.roomId : "";
         const response = await fetch(
-          `http://127.0.0.1:8000/api/available-rooms${currentRoomId ? `?current_room_id=${currentRoomId}` : ""}`
+          `${baseUrl}/available-rooms${currentRoomId ? `?current_room_id=${currentRoomId}` : ""}`
         );
         if (!response.ok) throw new Error("Erro ao buscar quartos disponíveis");
         const data = await response.json();
@@ -243,13 +244,13 @@ setCompanies(data);
     // 1️⃣ SALVAR / ATUALIZAR EMPRESA NA API LOCAL
     // ====================================================
     if (isEditing && dataToSave.id) {
-      await fetch(`http://127.0.0.1:8000/api/companies/${dataToSave.id}`, {
+      await fetch(`${baseUrl}/companies/${dataToSave.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataToSave),
       });
     } else {
-      const response = await fetch("http://127.0.0.1:8000/api/companies", {
+      const response = await fetch(`${baseUrl}/companies`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataToSave),
@@ -343,7 +344,7 @@ setCompanies(data);
   
       try {
           // 1. Excluir a empresa
-          await fetch(`http://127.0.0.1:8000/api/companies/${companyToDelete.id}`, {
+          await fetch(`${baseUrl}/companies/${companyToDelete.id}`, {
   method: "DELETE",
 });
 

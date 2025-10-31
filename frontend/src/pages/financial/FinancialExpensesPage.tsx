@@ -2,6 +2,8 @@ import { useEffect, useState, FormEvent } from "react";
 import { X } from "lucide-react";
 import Card from "../../components/ui/Card";
 
+const baseUrl = "https://pousada-backend-iccs.onrender.com/api";
+
 interface Expense {
   id: string;
   description: string;
@@ -27,7 +29,7 @@ function FinancialExpensesPage() {
   const fetchExpenses = async () => {
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:8000/api/expenses");
+      const res = await fetch(`${baseUrl}/expenses`);
       if (!res.ok) throw new Error("Erro ao carregar despesas");
       const data = await res.json();
       setExpenses(data);
@@ -54,7 +56,7 @@ function FinancialExpensesPage() {
         amount: parseFloat(formValues.amount.replace(",", ".") || "0"),
       };
 
-      const res = await fetch("http://localhost:8000/api/expenses", {
+      const res = await fetch(`${baseUrl}/expenses`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

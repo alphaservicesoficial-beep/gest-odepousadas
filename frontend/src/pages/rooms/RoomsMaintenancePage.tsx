@@ -30,6 +30,8 @@ type MaintenanceTask = {
   completedOn: string; // Data de conclusão (string 'YYYY-MM-DD' ou '-')
 };
 
+const baseUrl = "https://pousada-backend-iccs.onrender.com/api";
+
 // Mapeamento para Status Badge
 const PRIORITY_TONE = {
   alta: "danger",
@@ -75,7 +77,7 @@ function RoomsMaintenancePage() {
   const loadTasks = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/maintenance");
+      const response = await fetch(`${baseUrl}/maintenance`);
       if (!response.ok) throw new Error("Erro ao carregar manutenções");
   
       const data: MaintenanceTask[] = await response.json(); // ✅ Tipando o retorno
@@ -157,7 +159,7 @@ function RoomsMaintenancePage() {
       const newCompletedOn = newStatus === "concluída" ? updateForm.completedOn : "";
   
       // 🔹 Envia atualização para o backend FastAPI
-      const response = await fetch(`http://127.0.0.1:8000/api/maintenance/${selectedTask.id}?status=${newStatus}`, {
+      const response = await fetch(`${baseUrl}/maintenance/${selectedTask.id}?status=${newStatus}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

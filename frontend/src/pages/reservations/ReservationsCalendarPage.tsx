@@ -42,6 +42,8 @@ type DailyMovement = {
   status: 'success' | 'info' | 'warning';
 };
 
+const baseUrl = "https://pousada-backend-iccs.onrender.com/api";
+
 // --- CONSTANTES DE DATA (Mês Fixo para Simulação) ---
 const TARGET_MONTH = 10; // Outubro
 const TARGET_YEAR = 2025;
@@ -66,17 +68,17 @@ useEffect(() => {
     try {
       // não zera tudo enquanto carrega
       if (active) setIsLoading(true);
-      const occRes = await fetch(`http://127.0.0.1:8000/api/calendar/occupancy?year=${year}&month=${month}`);
+      const occRes = await fetch(`${baseUrl}/calendar/occupancy?year=${year}&month=${month}`);
       const occData = await occRes.json();
       if (active) setOccupancy(occData.days || {});
 
       if (selectedDay) {
-        const movementsRes = await fetch(`http://127.0.0.1:8000/api/calendar/movements?date=${selectedDay}`);
+        const movementsRes = await fetch(`${baseUrl}/calendar/movements?date=${selectedDay}`);
         const movementsData = await movementsRes.json();
         if (active) setMovements([...movementsData.checkins, ...movementsData.checkouts]);
       }
 
-      const roomsRes = await fetch("http://127.0.0.1:8000/api/rooms");
+      const roomsRes = await fetch(`${baseUrl}/rooms`);
       const roomsData = await roomsRes.json();
       if (active) setRooms(roomsData);
     } catch (err) {
@@ -182,7 +184,7 @@ const dailyMovements = movements.map((m) => {
     const newDocRef = doc(collection(db, "guests")); // Cria uma nova referência de documento
     
     try {
-      await fetch("http://127.0.0.1:8000/api/calendar/pre-reservations", {
+      await fetch(`${baseUrl}/calendar/pre-reservations`, {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({

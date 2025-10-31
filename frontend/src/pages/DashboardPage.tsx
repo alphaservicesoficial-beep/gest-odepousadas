@@ -3,6 +3,8 @@ import Card from "../components/ui/Card";
 import { KpiCard } from "../components/ui/KpiCard";
 import StatusBadge from "../components/ui/StatusBadge";
 
+const baseUrl = "https://pousada-backend-iccs.onrender.com/api";
+
 // Tipagem dos dados vindos do backend
 interface DashboardData {
   summary: {
@@ -32,7 +34,7 @@ function DashboardPage() {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        const res = await fetch("http://localhost:8000/api/dashboard");
+        const res = await fetch(`${baseUrl}/dashboard`);
         if (!res.ok) throw new Error("Erro ao carregar dados do dashboard.");
         const data = await res.json();
         setDashboardData(data);

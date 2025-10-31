@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import Card from "../../components/ui/Card";
 import { Trash2, Plus, Loader2 } from "lucide-react";
 
+
+const baseUrl = "https://pousada-backend-iccs.onrender.com/api";
+
 interface SettingsData {
   propertyName: string;
   phone: string;
@@ -51,8 +54,8 @@ function SettingsPage() {
     async function loadData() {
       try {
         const [settingsRes, usersRes] = await Promise.all([
-          fetch("http://localhost:8000/api/settings"),
-          fetch("http://localhost:8000/api/settings/users"),
+          fetch(`${baseUrl}/settings`),
+          fetch(`${baseUrl}/settings/users`),
         ]);
         const settingsData = await settingsRes.json();
         const usersData = await usersRes.json();
@@ -64,14 +67,14 @@ function SettingsPage() {
         setLoading(false);
       }
     }
-    loadData();
+    loadData(); 
   }, []);
 
   // 🔸 Salvar configurações
   async function handleSaveSettings() {
     try {
       setSaving(true);
-      const res = await fetch("http://localhost:8000/api/settings", {
+      const res = await fetch(`${baseUrl}/settings`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(settings),
@@ -92,13 +95,13 @@ function SettingsPage() {
       return;
     }
     try {
-      const res = await fetch("http://localhost:8000/api/settings/users", {
+      const res = await fetch("`${baseUrl}/settings/users`", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newUser),
       });
       if (!res.ok) throw new Error("Erro ao adicionar usuário");
-      const updated = await fetch("http://localhost:8000/api/settings/users").then((r) => r.json());
+      const updated = await fetch("`${baseUrl}/settings/users`").then((r) => r.json());
       setUsers(updated);
       setShowModal(false);
       setNewUser({ name: "", email: "", password: "", role: "camareira" });
@@ -112,7 +115,7 @@ function SettingsPage() {
     if (!id) return;
     if (!confirm("Tem certeza que deseja excluir este usuário?")) return;
     try {
-      await fetch(`http://localhost:8000/api/settings/users/${id}`, { method: "DELETE" });
+      await fetch(`${baseUrl}/settings/users/${id}`, { method: "DELETE" });
       setUsers(users.filter((u) => u.id !== id));
     } catch (error) {
       alert("Erro ao excluir usuário.");

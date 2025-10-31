@@ -72,6 +72,8 @@ type MaintenanceIssue = {
     status: "aberta" | "em andamento" | "concluída";
 };
 
+const baseUrl = "https://pousada-backend-iccs.onrender.com/api";
+
 // 🔹 Mapeamento de cores do status
 const STATUS_TONE = {
   disponível: "success",
@@ -1439,7 +1441,7 @@ const unsubRes = onSnapshot(resRef, (snap) => {
 
     try {
       // Envia a manutenção para o backend
-      const response = await fetch("http://127.0.0.1:8000/api/maintenance", {
+      const response = await fetch(`${baseUrl}/reservations`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

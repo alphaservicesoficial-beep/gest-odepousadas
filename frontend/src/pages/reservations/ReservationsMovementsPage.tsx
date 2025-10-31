@@ -5,6 +5,7 @@ import Card from "../../components/ui/Card";
 import StatusBadge from "../../components/ui/StatusBadge";
 import { X } from 'lucide-react';
 
+const baseUrl = "https://pousada-backend-iccs.onrender.com/api";
 
 // Definindo tipos de Movimentos
 type Movement = {
@@ -52,7 +53,7 @@ function ReservationsMovementsPage() {
  useEffect(() => {
   const fetchMovements = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/api/movements?period=${activePeriod}`);
+      const response = await fetch(`${baseUrl}/movements?period=${activePeriod}`);
       const data = await response.json();
 
       setCheckinData(data.checkins || []);

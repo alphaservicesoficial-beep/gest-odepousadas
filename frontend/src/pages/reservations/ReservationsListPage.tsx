@@ -3,6 +3,8 @@ import { useState, useEffect, useMemo } from "react";
 import Card from "../../components/ui/Card";
 import StatusBadge from "../../components/ui/StatusBadge";
 
+const baseUrl = "https://pousada-backend-iccs.onrender.com/api";
+
 type Reservation = {
   id: string;
   guestOrCompany: string;
@@ -64,7 +66,7 @@ function ReservationsListPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("http://127.0.0.1:8000/api/reservations");
+        const res = await fetch(`${baseUrl}/reservations`);
         const data = await res.json();
         setReservations(Array.isArray(data) ? data : []);
       } catch (e) {
@@ -127,7 +129,7 @@ function ReservationsListPage() {
 
   async function handleConfirmArrival(id: string) {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/reservations/${id}/checkin`, { method: "PUT" });
+      const res = await fetch(`${baseUrl}/reservations/${id}/checkin`, { method: "PUT" });
       if (!res.ok) throw new Error();
       setReservations((prev) =>
         prev.map((r) => (r.id === id ? { ...r, checkInStatus: "concluido", reservationStatus: "confirmado" } : r))
@@ -141,7 +143,7 @@ function ReservationsListPage() {
 
   async function handleConfirmDeparture(id: string) {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/reservations/${id}/checkout`, { method: "PUT" });
+      const res = await fetch(`${baseUrl}/reservations/${id}/checkout`, { method: "PUT" });
       if (!res.ok) throw new Error();
       setReservations((prev) => prev.map((r) => (r.id === id ? { ...r, checkOutStatus: "concluido" } : r)));
       setIsModalOpen(false);
@@ -153,7 +155,7 @@ function ReservationsListPage() {
 
   async function handleRegisterPayment(id: string, method: string, amount: number) {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/reservations/${id}/payment`, {
+      const res = await fetch(`${baseUrl}/reservations/${id}/payment`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ method, amount }),
@@ -182,7 +184,7 @@ function ReservationsListPage() {
 
   async function handleCancelReservation(id: string) {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/reservations/${id}/cancel`, { method: "PUT" });
+      const res = await fetch(`${baseUrl}/reservations/${id}/cancel`, { method: "PUT" });
       if (!res.ok) throw new Error();
       setReservations((prev) =>
         prev.map((r) =>
@@ -216,7 +218,7 @@ function ReservationsListPage() {
   }, [reservations, receiptSearch]);
 
   async function generateReceiptPDF(resId: string) {
-    const resp = await fetch(`http://127.0.0.1:8000/api/reservations/${resId}/receipt`);
+    const resp = await fetch(`${baseUrl}/reservations/${resId}/receipt`);
     if (!resp.ok) {
       alert("Erro ao gerar PDF.");
       return;

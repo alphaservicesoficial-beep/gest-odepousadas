@@ -9,13 +9,15 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
+  const baseUrl = "https://pousada-backend-iccs.onrender.com/api";
+
   // 🔹 NOVA função que chama o backend FastAPI
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError("");
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/login", {
+      const response = await fetch(`${baseUrl}/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

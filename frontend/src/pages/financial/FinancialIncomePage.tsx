@@ -3,6 +3,8 @@ import * as XLSX from "xlsx";
 import { X } from "lucide-react";
 import Card from "../../components/ui/Card";
 
+const baseUrl = "https://pousada-backend-iccs.onrender.com/api";
+
 interface Income {
   id: string;
   description: string;
@@ -27,14 +29,14 @@ function FinancialIncomePage() {
   }, []);
 
   const fetchIncomes = async () => {
-    const res = await fetch("http://localhost:8000/api/incomes");
+    const res = await fetch(`${baseUrl}/incomes`);
     const data = await res.json();
     setIncomes(data);
   };
 
   const handleCreateSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    await fetch("http://localhost:8000/api/incomes", {
+    await fetch(`${baseUrl}/incomes`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

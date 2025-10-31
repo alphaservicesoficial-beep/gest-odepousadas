@@ -38,6 +38,8 @@ type Room = {
   amenities: string[];
 };
 
+const baseUrl = "https://pousada-backend-iccs.onrender.com/api";
+
 // --- Funções de Máscara (Utilitárias) ---
 const maskCPF = (value: string): string => {
     const cleaned = value.replace(/\D/g, "");
@@ -92,8 +94,8 @@ export default function GuestsPage() {
 // --- Carregar hóspedes e quartos do backend ---
 async function loadData() {
   try {
-    const guestsRes = await fetch("http://127.0.0.1:8000/api/guests");
-    const roomsRes = await fetch("http://127.0.0.1:8000/api/rooms");
+    const guestsRes = await fetch(`${baseUrl}/guests`);
+    const roomsRes = await fetch(`${baseUrl}/rooms`);
 
     const guestsData = await guestsRes.json();
     const roomsData = await roomsRes.json();
@@ -202,7 +204,7 @@ async function handleSave(e: FormEvent) {
   try {
     if (isEditing && dataToSave.id) {
       // 1️⃣ Atualiza hóspede existente
-      await fetch(`http://127.0.0.1:8000/api/guests/${dataToSave.id}`, {
+      await fetch(`${baseUrl}/guests/${dataToSave.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataToSave),
@@ -212,14 +214,14 @@ async function handleSave(e: FormEvent) {
       const oldGuest = guests.find((g) => g.id === dataToSave.id);
       if (oldGuest && oldGuest.roomId !== dataToSave.roomId) {
         // Libera o quarto antigo
-        await fetch(`http://127.0.0.1:8000/api/rooms/${oldGuest.roomId}`, {
+        await fetch(`${baseUrl}/rooms/${oldGuest.roomId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status: "disponível" }),
         });
 
         // Reserva o novo quarto
-        await fetch(`http://127.0.0.1:8000/api/rooms/${dataToSave.roomId}`, {
+        await fetch(`${baseUrl}/rooms/${dataToSave.roomId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status: "reservado" }),
@@ -228,7 +230,7 @@ async function handleSave(e: FormEvent) {
 
     } else {
       // 3️⃣ Cria novo hóspede
-      await fetch("http://127.0.0.1:8000/api/guests", {
+      await fetch(`${baseUrl}/guests`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataToSave),
@@ -236,7 +238,7 @@ async function handleSave(e: FormEvent) {
 
       // Marca quarto como reservado
       if (dataToSave.roomId) {
-        await fetch(`http://127.0.0.1:8000/api/rooms/${dataToSave.roomId}`, {
+        await fetch(`${baseUrl}/rooms/${dataToSave.roomId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status: "reservado" }),
@@ -260,13 +262,13 @@ async function handleDelete(guestToDelete: Guest) {
 
   try {
     // Exclui hóspede
-    await fetch(`http://127.0.0.1:8000/api/guests/${guestToDelete.id}`, {
+    await fetch(`${baseUrl}/guests/${guestToDelete.id}`, {
       method: "DELETE",
     });
 
     // Libera o quarto
     if (guestToDelete.roomId) {
-      await fetch(`http://127.0.0.1:8000/api/rooms/${guestToDelete.roomId}`, {
+      await fetch(`${baseUrl}/rooms/${guestToDelete.roomId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "disponível" }),
