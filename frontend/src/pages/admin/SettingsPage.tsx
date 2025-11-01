@@ -95,13 +95,13 @@ function SettingsPage() {
       return;
     }
     try {
-      const res = await fetch("`${baseUrl}/settings/users`", {
+      const res = await fetch(`${baseUrl}/settings/users`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newUser),
       });
       if (!res.ok) throw new Error("Erro ao adicionar usuário");
-      const updated = await fetch("`${baseUrl}/settings/users`").then((r) => r.json());
+      const updated = await fetch(`${baseUrl}/settings/users`).then((r) => r.json());
       setUsers(updated);
       setShowModal(false);
       setNewUser({ name: "", email: "", password: "", role: "camareira" });

@@ -15,7 +15,7 @@ export default function LoginPage() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-
+  
     try {
       const response = await fetch(`${baseUrl}/login`, {
         method: "POST",
@@ -27,18 +27,26 @@ export default function LoginPage() {
           password,
         }),
       });
-
+  
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.detail || "Usuário ou senha incorretos!");
       }
-
+  
       const user = await response.json();
-
-      // ✅ Salva a sessão localmente
-      setSession(user.role as Role, user.name);
-
-      // ✅ Redireciona para o dashboard
+  
+      // ✅ Garante que os dados vieram corretamente
+      if (!user || !user.role || !user.name) {
+        throw new Error("Erro inesperado: resposta inválida do servidor.");
+      }
+  
+      // ✅ Salva a sessão
+      await new Promise<void>((resolve) => {
+        setSession(user.role as Role, user.name);
+        setTimeout(() => resolve(), 200);
+      });
+  
+      // ✅ Redireciona após salvar sessão
       navigate("/dashboard");
     } catch (err: any) {
       console.error("Erro ao fazer login:", err);
@@ -47,7 +55,7 @@ export default function LoginPage() {
       );
     }
   }
-
+  
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-100 to-slate-200">
       <div className="bg-white shadow-xl rounded-2xl p-10 w-full max-w-md text-center border border-slate-200">
