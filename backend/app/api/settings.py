@@ -1,59 +1,33 @@
 from fastapi import APIRouter, HTTPException, Body
 from app.core.firebase import db
 from google.cloud import firestore
-import bcrypt
 
 router = APIRouter()
 
-@router.get("/settings")
-def get_settings():
-    try:
-        doc_ref = db.collection("settings").document("property")
-        doc = doc_ref.get()
-        if not doc.exists:
-            return {
-                "propertyName": "",
-                "phone": "",
-                "address": "",
-                "currency": "BRL",
-                "checkInTime": "14:00",
-                "checkOutTime": "12:00",
-                "cancellationPolicy": "Cancelamentos devem ser informados com 48h de antecedência.",
-                "wifiPassword": "",
-                "notes": "",
-            }
-        return doc.to_dict()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.put("/settings")
-def update_settings(payload: dict = Body(...)):
-    try:
-        db.collection("settings").document("property").set(payload, merge=True)
-        return {"message": "Configurações atualizadas com sucesso!"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
+# ============================================================
+# 🔹 LISTAR TODOS OS USUÁRIOS
+# ============================================================
 @router.get("/settings/users")
 def list_users():
     try:
         users_ref = db.collection("users").stream()
         users = []
-        for u in users_ref:
-            data = u.to_dict()
+        for doc in users_ref:
+            data = doc.to_dict() or {}
             users.append({
-                "id": u.id,
-                "name": data.get("name", ""),
-                "email": data.get("email", ""),
-                "role": data.get("role", "camareira"),
+                "id": doc.id,
+                "name": data.get("name") or "",
+                "email": data.get("email") or "",
+                "role": data.get("role") or "camareira",
             })
         return users
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Erro ao listar usuários: {str(e)}")
 
 
+# ============================================================
+# 🔹 CRIAR NOVO USUÁRIO
+# ============================================================
 @router.post("/settings/users")
 def create_user(payload: dict = Body(...)):
     try:
@@ -65,28 +39,40 @@ def create_user(payload: dict = Body(...)):
         if not name or not email or not password:
             raise HTTPException(status_code=400, detail="Nome, e-mail e senha são obrigatórios")
 
-        hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-
-        db.collection("users").add({
+        # 🔹 Cria documento no Firestore
+        doc_ref = db.collection("users").document()  # gera ID automático
+        doc_ref.set({
             "name": name,
             "email": email,
-            "password": hashed,
+            "password": password,
             "role": role,
-            "createdAt": firestore.SERVER_TIMESTAMP
+            "createdAt": firestore.SERVER_TIMESTAMP,
         })
 
-        return {"message": "Usuário criado com sucesso!"}
+        return {
+            "message": "Usuário criado com sucesso!",
+            "id": doc_ref.id,
+            "name": name,
+            "email": email,
+            "role": role,
+        }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Erro ao criar usuário: {str(e)}")
 
 
+# ============================================================
+# 🔹 EXCLUIR USUÁRIO
+# ============================================================
 @router.delete("/settings/users/{user_id}")
 def delete_user(user_id: str):
     try:
         user_ref = db.collection("users").document(user_id)
-        if not user_ref.get().exists:
+        doc = user_ref.get()
+
+        if not doc.exists:
             raise HTTPException(status_code=404, detail="Usuário não encontrado")
+
         user_ref.delete()
         return {"message": "Usuário excluído com sucesso!"}
     except Exception as e:

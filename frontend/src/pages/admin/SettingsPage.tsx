@@ -93,21 +93,27 @@ export default function SettingsPage() {
       alert("Preencha nome, e-mail e senha!");
       return;
     }
+  
     try {
       const res = await fetch(`${baseUrl}/settings/users`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newUser),
       });
+  
       if (!res.ok) throw new Error("Erro ao adicionar usuário");
-      const updated = await fetch(`${baseUrl}/settings/users`).then((r) => r.json());
-      setUsers(updated);
+  
+      const createdUser = await res.json();
+  
+      // ✅ adiciona o usuário na lista sem precisar recarregar tudo
+      setUsers((prev) => [...prev, createdUser]);
       setShowModal(false);
       setNewUser({ name: "", email: "", password: "", role: "camareira" });
     } catch (error) {
       alert("Erro ao adicionar usuário");
     }
   }
+  
 
   // 🔸 Excluir usuário (agora atualiza corretamente)
   async function handleDeleteUser(id?: string) {
