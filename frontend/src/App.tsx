@@ -1,6 +1,4 @@
 import { Route, Routes, Navigate } from "react-router-dom";
-import { useEffect, useState } from "react";
-
 import { AppLayout } from "./components/layout/Layout";
 import DashboardPage from "./pages/DashboardPage";
 import CompaniesPage from "./pages/registrations/CompaniesPage";
@@ -16,39 +14,31 @@ import FinancialExpensesPage from "./pages/financial/FinancialExpensesPage";
 import AIConsultantPage from "./pages/admin/AIConsultantPage";
 import SettingsPage from "./pages/admin/SettingsPage";
 import LoginPage from "./pages/LoginPage";
-import { isAuthenticated } from "./lib/auth"; // ✅ Importa a função correta do auth.ts
+
+import { useAuth } from "./context/AuthContext"; // ✅ Usando o contexto global
 
 export default function App() {
-  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
+  const { isAuthenticated, loading } = useAuth(); // ✅ Agora observa o estado global
 
-  // ✅ Checa o login assim que o app carrega
-  useEffect(() => {
-    const checkAuth = () => {
-      const loggedIn = isAuthenticated();
-      setAuthenticated(loggedIn);
-    };
-    checkAuth();
-  }, []);
-
-  // 🚀 Evita piscar tela branca (enquanto verifica o estado)
-  if (authenticated === null) {
+  // 🚀 Mostra um loading enquanto o contexto verifica o localStorage
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-screen text-slate-600">
-        Carregando...
+        Carregando sessão...
       </div>
     );
   }
 
   return (
     <Routes>
-      {/* 🔹 Tela de Login (fora do layout principal) */}
+      {/* 🔹 Tela de Login */}
       <Route path="/login" element={<LoginPage />} />
 
-      {/* 🔸 Redirecionamento da raiz "/" */}
+      {/* 🔸 Raiz */}
       <Route
         path="/"
         element={
-          authenticated ? (
+          isAuthenticated ? (
             <Navigate to="/dashboard" replace />
           ) : (
             <Navigate to="/login" replace />
@@ -56,8 +46,8 @@ export default function App() {
         }
       />
 
-      {/* 🔸 Rotas protegidas */}
-      {authenticated ? (
+      {/* 🔒 Rotas protegidas */}
+      {isAuthenticated ? (
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
 
@@ -83,11 +73,10 @@ export default function App() {
           <Route path="/admin/consultor-ia" element={<AIConsultantPage />} />
           <Route path="/admin/configuracoes" element={<SettingsPage />} />
 
-          {/* Rota fallback */}
+          {/* Fallback */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
       ) : (
-        // Se não estiver logado
         <Route path="*" element={<Navigate to="/login" replace />} />
       )}
     </Routes>

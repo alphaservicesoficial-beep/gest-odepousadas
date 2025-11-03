@@ -6,6 +6,7 @@ type AuthContextType = {
   isAuthenticated: boolean;
   userRole: Role | null;
   userName: string | null;
+  loading: boolean; // 👈 novo
   login: (userData: { name: string; role: Role }) => void;
   logout: () => void;
 };
@@ -14,6 +15,7 @@ const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   userRole: null,
   userName: null,
+  loading: true, // 👈 padrão
   login: () => {},
   logout: () => {},
 });
@@ -22,6 +24,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState<Role | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true); // 👈 novo
 
   // Carrega do localStorage ao iniciar
   useEffect(() => {
@@ -36,6 +39,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         localStorage.removeItem("user");
       }
     }
+    setLoading(false); // 👈 só depois de verificar o localStorage
   }, []);
 
   const login = (userData: { name: string; role: Role }) => {
@@ -53,7 +57,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, userRole, userName, login, logout }}>
+    <AuthContext.Provider
+      value={{ isAuthenticated, userRole, userName, loading, login, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );

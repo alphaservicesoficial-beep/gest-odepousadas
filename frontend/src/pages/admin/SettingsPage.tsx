@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import Card from "../../components/ui/Card";
 import { Trash2, Plus, Loader2 } from "lucide-react";
 
-
 const baseUrl = "https://pousada-backend-iccs.onrender.com/api";
 
 interface SettingsData {
@@ -25,7 +24,7 @@ interface User {
   role: string;
 }
 
-function SettingsPage() {
+export default function SettingsPage() {
   const [openItem, setOpenItem] = useState<string | null>("property");
   const [settings, setSettings] = useState<SettingsData>({
     propertyName: "",
@@ -67,7 +66,7 @@ function SettingsPage() {
         setLoading(false);
       }
     }
-    loadData(); 
+    loadData();
   }, []);
 
   // 🔸 Salvar configurações
@@ -110,15 +109,18 @@ function SettingsPage() {
     }
   }
 
-  // 🔸 Excluir usuário
+  // 🔸 Excluir usuário (agora atualiza corretamente)
   async function handleDeleteUser(id?: string) {
     if (!id) return;
     if (!confirm("Tem certeza que deseja excluir este usuário?")) return;
+
     try {
-      await fetch(`${baseUrl}/settings/users/${id}`, { method: "DELETE" });
-      setUsers(users.filter((u) => u.id !== id));
+      const res = await fetch(`${baseUrl}/settings/users/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Erro ao excluir usuário");
+      setUsers((prev) => prev.filter((u) => u.id !== id));
+      alert("Usuário excluído com sucesso!");
     } catch (error) {
-      alert("Erro ao excluir usuário.");
+      alert("Erro ao excluir usuário. Tente novamente.");
     }
   }
 
@@ -239,18 +241,21 @@ function SettingsPage() {
             {openItem === "users" && (
               <div className="border-t border-slate-800 px-5 py-4 space-y-4">
                 <div className="flex justify-end">
-                  <button className="btn-primary flex items-center" onClick={() => setShowModal(true)}>
+                  <button
+                    className="btn-primary flex items-center"
+                    onClick={() => setShowModal(true)}
+                  >
                     <Plus className="h-4 w-4 mr-2" /> Novo usuário
                   </button>
                 </div>
 
-                <table className="min-w-full divide-y divide-slate-800 text-sm text-slate-200">
+                <table className="min-w-full divide-y divide-slate-800 text-sm text-slate-200 w-full">
                   <thead className="bg-slate-900/50 text-xs uppercase text-slate-400">
                     <tr>
-                      <th className="px-4 py-2">Nome</th>
-                      <th className="px-4 py-2">E-mail</th>
-                      <th className="px-4 py-2">Função</th>
-                      <th className="px-4 py-2 text-right">Ações</th>
+                      <th className="px-4 py-2 text-left w-1/3">Nome</th>
+                      <th className="px-4 py-2 text-left w-1/3">E-mail</th>
+                      <th className="px-4 py-2 text-left w-1/4">Função</th>
+                      <th className="px-4 py-2 text-right w-1/6">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -260,7 +265,10 @@ function SettingsPage() {
                         <td className="px-4 py-3">{u.email}</td>
                         <td className="px-4 py-3 capitalize">{u.role}</td>
                         <td className="px-4 py-3 text-right">
-                          <button onClick={() => handleDeleteUser(u.id)} className="text-red-400 hover:text-red-600">
+                          <button
+                            onClick={() => handleDeleteUser(u.id)}
+                            className="text-red-400 hover:text-red-600"
+                          >
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </td>
@@ -324,5 +332,3 @@ function SettingsPage() {
     </div>
   );
 }
-
-export default SettingsPage;

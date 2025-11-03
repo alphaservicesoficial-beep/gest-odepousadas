@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException, Body
 from app.core.firebase import db
 from google.cloud import firestore
+import bcrypt
 
 router = APIRouter()
 
-# 🔹 GET /api/settings - retorna configurações gerais
 @router.get("/settings")
 def get_settings():
     try:
@@ -27,7 +27,6 @@ def get_settings():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# 🔹 PUT /api/settings - salva/atualiza configurações
 @router.put("/settings")
 def update_settings(payload: dict = Body(...)):
     try:
@@ -37,7 +36,6 @@ def update_settings(payload: dict = Body(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# 🔹 GET /api/settings/users - lista todos os usuários
 @router.get("/settings/users")
 def list_users():
     try:
@@ -47,6 +45,7 @@ def list_users():
             data = u.to_dict()
             users.append({
                 "id": u.id,
+                "name": data.get("name", ""),
                 "email": data.get("email", ""),
                 "role": data.get("role", "camareira"),
             })
@@ -55,9 +54,6 @@ def list_users():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# 🔹 POST /api/settings/users - cria novo usuário (apenas e-mail e senha)
-# 🔹 POST /api/settings/users - cria novo usuário
-# 🔹 POST /api/settings/users - cria novo usuário com nome, e-mail e senha
 @router.post("/settings/users")
 def create_user(payload: dict = Body(...)):
     try:
@@ -69,11 +65,12 @@ def create_user(payload: dict = Body(...)):
         if not name or not email or not password:
             raise HTTPException(status_code=400, detail="Nome, e-mail e senha são obrigatórios")
 
-        # Adiciona no Firestore
+        hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
         db.collection("users").add({
             "name": name,
             "email": email,
-            "password": password,
+            "password": hashed,
             "role": role,
             "createdAt": firestore.SERVER_TIMESTAMP
         })
@@ -81,17 +78,16 @@ def create_user(payload: dict = Body(...)):
         return {"message": "Usuário criado com sucesso!"}
 
     except Exception as e:
-        print("❌ Erro ao criar usuário:", e)
         raise HTTPException(status_code=500, detail=str(e))
 
-# 🔹 DELETE /api/settings/users/{user_id} - exclui usuário
+
 @router.delete("/settings/users/{user_id}")
 def delete_user(user_id: str):
     try:
-        auth.delete_user(user_id)
         user_ref = db.collection("users").document(user_id)
-        if user_ref.get().exists:
-            user_ref.delete()
+        if not user_ref.get().exists:
+            raise HTTPException(status_code=404, detail="Usuário não encontrado")
+        user_ref.delete()
         return {"message": "Usuário excluído com sucesso!"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao excluir usuário: {str(e)}")

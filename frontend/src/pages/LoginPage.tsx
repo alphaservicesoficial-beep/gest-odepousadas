@@ -1,18 +1,18 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // ✅ Importa o hook para redirecionar
+import { useNavigate } from "react-router-dom";
 import { Building2, Mail, Lock, LogIn } from "lucide-react";
-import { useAuth } from "../context/AuthContext"; // ✅ Importa o contexto global de autenticação
+import { useAuth } from "../context/AuthContext";
+import { setSession } from "../lib/auth"; // 👈 IMPORTANTE
 
 export default function LoginPage() {
-  const navigate = useNavigate(); // ✅ Hook para redirecionar o usuário
-  const { login } = useAuth(); // ✅ Função global de login do AuthContext
+  const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   const baseUrl = "https://pousada-backend-iccs.onrender.com/api";
 
-  // 🔹 Função de login
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -31,13 +31,15 @@ export default function LoginPage() {
 
       const user = await response.json();
 
-      // ✅ Valida resposta
       if (!user || !user.role || !user.name) {
         throw new Error("Erro inesperado: resposta inválida do servidor.");
       }
 
-      // ✅ Salva sessão global (AuthContext)
+      // ✅ Salva sessão global + localStorage
       login({ name: user.name, role: user.role });
+      setSession(user.role, user.name);
+
+      console.log("✅ Login bem-sucedido!", user);
 
       // ✅ Redireciona após login
       navigate("/dashboard", { replace: true });
