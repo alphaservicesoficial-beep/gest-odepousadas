@@ -31,10 +31,20 @@ function Topbar({ onOpenMobileSidebar }: TopbarProps) {
     .slice(0, 2);
 
   // 🚪 Função de logout
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
+ // 🚪 Função de logout corrigida
+const handleLogout = () => {
+  // Remove qualquer dado salvo sobre o usuário
+  localStorage.removeItem("user");
+  localStorage.removeItem("isLoggedIn");
+  localStorage.removeItem("userRole");
+  localStorage.removeItem("userName");
+
+  // (opcional) Limpa também sessionStorage se estiver sendo usado
+  sessionStorage.clear();
+
+  // Redireciona para a tela de login
+  navigate("/login", { replace: true });
+};
 
   // Texto do cargo formatado
   const roleText =

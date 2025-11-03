@@ -1,61 +1,52 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom"; // ✅ Importa o hook para redirecionar
 import { Building2, Mail, Lock, LogIn } from "lucide-react";
-import { setSession, Role } from "../lib/auth";
+import { useAuth } from "../context/AuthContext"; // ✅ Importa o contexto global de autenticação
 
 export default function LoginPage() {
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // ✅ Hook para redirecionar o usuário
+  const { login } = useAuth(); // ✅ Função global de login do AuthContext
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   const baseUrl = "https://pousada-backend-iccs.onrender.com/api";
 
-  // 🔹 NOVA função que chama o backend FastAPI
+  // 🔹 Função de login
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-  
+
     try {
       const response = await fetch(`${baseUrl}/login`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
       });
-  
+
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.detail || "Usuário ou senha incorretos!");
       }
-  
+
       const user = await response.json();
-  
-      // ✅ Garante que os dados vieram corretamente
+
+      // ✅ Valida resposta
       if (!user || !user.role || !user.name) {
         throw new Error("Erro inesperado: resposta inválida do servidor.");
       }
-  
-      // ✅ Salva a sessão
-      await new Promise<void>((resolve) => {
-        setSession(user.role as Role, user.name);
-        setTimeout(() => resolve(), 200);
-      });
-  
-      // ✅ Redireciona após salvar sessão
-      navigate("/dashboard");
+
+      // ✅ Salva sessão global (AuthContext)
+      login({ name: user.name, role: user.role });
+
+      // ✅ Redireciona após login
+      navigate("/dashboard", { replace: true });
     } catch (err: any) {
       console.error("Erro ao fazer login:", err);
-      setError(
-        err.message || "Ocorreu um erro ao fazer login. Tente novamente."
-      );
+      setError(err.message || "Ocorreu um erro ao fazer login. Tente novamente.");
     }
   }
-  
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-100 to-slate-200">
       <div className="bg-white shadow-xl rounded-2xl p-10 w-full max-w-md text-center border border-slate-200">
