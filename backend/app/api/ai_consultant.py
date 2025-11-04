@@ -2,16 +2,16 @@ from fastapi import APIRouter, HTTPException, Body
 from app.core.firebase import db
 import datetime
 import os
-import openai
+import google.generativeai as genai  # ✅ Import certo
 
 router = APIRouter()
 
-# 🔹 Configuração da API da OpenAI (adicione sua chave no .env)
+# 🔹 Configuração da API do Gemini
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-model = genai.GenerativeModel("gemini-1.5-flash")
+model = genai.GenerativeModel("gemini-1.5-flash")  # ou "gemini-1.5-pro" se quiser respostas mais completas
 
 
-# 🔹 Função utilitária: resumir dados em texto simples
+# 🔹 Função utilitária: resumo dos dados do sistema
 def summarize_data():
     try:
         reservas_ref = db.collection("reservas").stream()
@@ -41,53 +41,38 @@ def summarize_data():
         return f"Erro ao coletar dados: {str(e)}"
 
 
-# 🔹 IA com histórico e contexto dinâmico
+# 🔹 Endpoint de consulta à IA
 @router.post("/ai/consult")
 def ai_consult(payload: dict = Body(...)):
     """
-    Consultor IA com memória e integração em tempo real com dados do sistema.
+    Consultor IA com integração em tempo real com dados do sistema.
     """
     question = payload.get("question", "").strip()
-    chat_history = payload.get("history", [])  # lista de mensagens anteriores
+    chat_history = payload.get("history", [])
 
     if not question:
         raise HTTPException(status_code=400, detail="Pergunta não fornecida.")
 
     try:
-        # 1️⃣ Montar contexto com dados reais do sistema
+        # 1️⃣ Contexto com dados reais
         context = summarize_data()
 
-        # 2️⃣ Montar o histórico da conversa
-        messages = [
-            {
-                "role": "system",
-                "content": (
-                    "Você é um consultor inteligente de uma pousada, chamado *Assistente da Hospedagem*. "
-                    "Você responde de forma objetiva, cordial e com base nos dados do sistema. "
-                    "Quando possível, use emojis para deixar a resposta mais amigável. "
-                    "Se não houver informação suficiente, diga 'Não encontrei essa informação nos registros atuais'."
-                ),
-            },
-        ]
+        # 2️⃣ Monta o prompt da IA
+        full_prompt = f"""
+        Você é o Assistente da Hospedagem, um consultor inteligente da pousada.
+        Responda sempre de forma educada, objetiva e baseada nos dados abaixo.
 
-        # Adiciona histórico anterior (se houver)
-        for msg in chat_history:
-            messages.append(msg)
+        {context}
 
-        # Adiciona nova pergunta
-        messages.append({"role": "user", "content": f"{question}\n\n{context}"})
+        Pergunta do usuário: {question}
+        """
 
-        # 3️⃣ Chamada ao modelo
-        completion = openai.ChatCompletion.create(
-            model="gpt-4o-mini",
-            messages=messages,
-            temperature=0.4,
-            max_tokens=350,
-        )
+        # 3️⃣ Gera resposta com Gemini
+        response = model.generate_content(full_prompt)
 
-        resposta = completion.choices[0].message["content"].strip()
+        resposta = response.text.strip()
 
-        # 4️⃣ Armazena a interação no Firestore (opcional)
+        # 4️⃣ Armazena histórico no Firestore
         db.collection("ia_logs").add({
             "question": question,
             "answer": resposta,
