@@ -7,7 +7,8 @@ from app.core.firebase import db
 # ✅ importar o router de manutenção
 from app.api import maintenance, incomes, expenses, settings, receipts, login
 
-from app.api import financial_dashboard
+from app.api import financial_dashboard, ai_consultant
+
 
 app = FastAPI(title="Gestão de Pousadas API")
 
@@ -40,7 +41,7 @@ app.include_router(financial_dashboard.router, prefix="/api", tags=["financial"]
 app.include_router(settings.router, prefix="/api") 
 app.include_router(receipts.router, prefix="/api", tags=["reports"]) 
 app.include_router(login.router, prefix="/api", tags=["Login"])
-
+app.include_router(ai_consultant.router, prefix="/api")
 
 @app.get("/")
 def root():

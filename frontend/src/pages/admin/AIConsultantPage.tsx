@@ -1,114 +1,96 @@
-﻿import { Bot, Send } from "lucide-react";
+﻿import { Bot, Send, User } from "lucide-react";
 import { useState } from "react";
-
 import Card from "../../components/ui/Card";
 import StatusBadge from "../../components/ui/StatusBadge";
 
-function AIConsultantPage() {
+const baseUrl = "https://pousada-backend-iccs.onrender.com/api";
+
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export default function AIConsultantPage() {
   const [question, setQuestion] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSend(e: React.FormEvent) {
+    e.preventDefault();
+    if (!question.trim()) return;
+
+    const newMessage: Message = { role: "user", content: question };
+    setMessages((prev) => [...prev, newMessage]);
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${baseUrl}/ai/consult`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question,
+          history: messages, // envia o histórico anterior
+        }),
+      });
+
+      const data = await res.json();
+      setMessages((prev) => [...prev, { role: "assistant", content: data.answer }]);
+      setQuestion("");
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "❌ Erro ao obter resposta. Tente novamente." },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
       <Card
         title="Consultor IA"
-        description="Faça perguntas sobre dados operacionais ou peça recomendações ao consultor inteligente."
-        headerAction={
-          <StatusBadge label="Modelo: gpt-hospitality-pro" status="info" />
-        }
+        description="Converse com o assistente inteligente da pousada."
+        headerAction={<StatusBadge label="Modelo: gpt-hospitality-pro" status="info" />}
       >
-        <div className="grid gap-6 xl:grid-cols-[2fr_1fr]">
-          <div className="surface-section h-full flex flex-col">
-            <div className="flex items-center gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-800">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20 text-primary">
-                <Bot size={18} />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-emphasis">
-                  Assistente da hospedagem
-                </p>
-                <p className="text-xs text-muted">
-                  Pronto para responder com dados em tempo real.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-1 flex-col overflow-hidden">
-              <div className="flex-1 space-y-3 overflow-y-auto p-5 text-sm text-muted-strong">
-                <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/60">
-                  <p className="text-xs uppercase text-muted-soft">Sugestão</p>
-                  <p className="mt-1">
-                    Pergunte:{" "}
-                    <span className="text-emphasis">
-                      "Quantas reservas confirmadas temos para esta semana?"
-                    </span>
-                  </p>
-                </div>
-              </div>
-
-              <form
-                className="border-t border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/80"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  setQuestion("");
-                }}
+        <div className="h-[70vh] flex flex-col">
+          <div className="flex-1 overflow-y-auto space-y-4 p-4 bg-slate-950/5 dark:bg-slate-900/40 rounded-xl">
+            {messages.map((msg, i) => (
+              <div
+                key={i}
+                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
-                <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-950">
-                  <textarea
-                    value={question}
-                    onChange={(event) => setQuestion(event.target.value)}
-                    placeholder="Digite sua pergunta..."
-                    className="max-h-32 flex-1 resize-none border-none bg-transparent text-sm text-emphasis outline-none placeholder:text-muted"
-                    rows={2}
-                  />
-                  <button
-                    type="submit"
-                    className="btn btn-sm bg-primary text-white hover:bg-primary/90 shadow-sm"
-                  >
-                    <Send size={16} />
-                  </button>
+                <div
+                  className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm shadow ${
+                    msg.role === "user"
+                      ? "bg-primary text-white"
+                      : "bg-white dark:bg-slate-800 text-slate-200"
+                  }`}
+                >
+                  {msg.content}
                 </div>
-                <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted">
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" defaultChecked /> Web Vision
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" /> Expandir contexto financeiro
-                  </label>
-                </div>
-              </form>
-            </div>
+              </div>
+            ))}
+            {loading && <p className="text-xs text-muted">Gerando resposta...</p>}
           </div>
 
-          <div className="space-y-4">
-            <Card title="Consultas rápidas" className="surface-section">
-              <ul className="space-y-2 text-sm text-muted-strong">
-                <li className="rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-800">
-                  Como está a ocupação na próxima semana?
-                </li>
-                <li className="rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-800">
-                  Qual o total previsto em contas a receber para outubro?
-                </li>
-                <li className="rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-800">
-                  Quais quartos precisam de manutenção urgente?
-                </li>
-              </ul>
-            </Card>
-
-            <Card
-              title="Fontes de dados conectadas"
-              className="surface-section"
+          <form onSubmit={handleSend} className="mt-4 flex items-center gap-3">
+            <textarea
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder="Digite sua pergunta..."
+              className="flex-1 surface-input resize-none h-14"
+            />
+            <button
+              type="submit"
+              className="btn-primary h-14 px-5 flex items-center justify-center"
+              disabled={loading}
             >
-              <ul className="text-sm text-muted-strong">
-                <li>Reservas (tempo real)</li>
-                <li>Financeiro (última atualização: 12/10/2025 22:00)</li>
-                <li>Manutenção (integração beta)</li>
-              </ul>
-            </Card>
-          </div>
+              <Send size={18} />
+            </button>
+          </form>
         </div>
       </Card>
     </div>
   );
 }
-
-export default AIConsultantPage;

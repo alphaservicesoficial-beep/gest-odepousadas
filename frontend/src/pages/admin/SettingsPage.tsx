@@ -255,33 +255,48 @@ export default function SettingsPage() {
                   </button>
                 </div>
 
-                <table className="min-w-full divide-y divide-slate-800 text-sm text-slate-200 w-full">
-                  <thead className="bg-slate-900/50 text-xs uppercase text-slate-400">
-                    <tr>
-                      <th className="px-4 py-2 text-left w-1/3">Nome</th>
-                      <th className="px-4 py-2 text-left w-1/3">E-mail</th>
-                      <th className="px-4 py-2 text-left w-1/4">Função</th>
-                      <th className="px-4 py-2 text-right w-1/6">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((u) => (
-                      <tr key={u.id} className="border-b border-slate-800 hover:bg-slate-900/40">
-                        <td className="px-4 py-3">{u.name}</td>
-                        <td className="px-4 py-3">{u.email}</td>
-                        <td className="px-4 py-3 capitalize">{u.role}</td>
-                        <td className="px-4 py-3 text-right">
-                          <button
-                            onClick={() => handleDeleteUser(u.id)}
-                            className="text-red-400 hover:text-red-600"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div className="overflow-x-auto rounded-lg">
+  <table className="min-w-full divide-y divide-slate-800 text-sm text-slate-200">
+    <thead className="bg-slate-900/50 text-xs uppercase text-slate-400 hidden md:table-header-group">
+      <tr>
+        <th className="px-4 py-2 text-left w-1/3">Nome</th>
+        <th className="px-4 py-2 text-left w-1/3">E-mail</th>
+        <th className="px-4 py-2 text-left w-1/4">Função</th>
+        <th className="px-4 py-2 text-right w-1/6">Ações</th>
+      </tr>
+    </thead>
+    <tbody className="block md:table-row-group">
+      {users.map((u) => (
+        <tr
+          key={u.id}
+          className="block md:table-row border md:border-0 border-slate-800 md:hover:bg-slate-900/40 rounded-lg md:rounded-none mb-3 md:mb-0 p-3 md:p-0 bg-slate-900/30 md:bg-transparent"
+        >
+          <td className="px-4 py-2 block md:table-cell">
+            <span className="font-semibold md:hidden text-slate-400">Nome: </span>
+            {u.name}
+          </td>
+          <td className="px-4 py-2 block md:table-cell break-all">
+            <span className="font-semibold md:hidden text-slate-400">E-mail: </span>
+            {u.email}
+          </td>
+          <td className="px-4 py-2 block md:table-cell capitalize">
+            <span className="font-semibold md:hidden text-slate-400">Função: </span>
+            {u.role}
+          </td>
+          <td className="px-4 py-2 block md:table-cell text-right">
+            <button
+              onClick={() => handleDeleteUser(u.id)}
+              className="text-red-400 hover:text-red-600"
+            >
+              <Trash2 className="h-4 w-4 inline" />
+            </button>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+
               </div>
             )}
           </div>
