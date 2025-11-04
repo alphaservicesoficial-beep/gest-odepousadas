@@ -2,13 +2,17 @@ from fastapi import APIRouter, HTTPException, Body
 from app.core.firebase import db
 import datetime
 import os
-import google.generativeai as genai  # ✅ Import certo
+import google.generativeai as genai  # ✅ SDK oficial do Gemini
 
 router = APIRouter()
 
-# 🔹 Configuração da API do Gemini
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-model = genai.GenerativeModel("gemini-1.5-flash")  # ou "gemini-1.5-pro" se quiser respostas mais completas
+# 🔹 Configuração da API do Gemini (usa variável do ambiente no Render)
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+if not GOOGLE_API_KEY:
+    raise RuntimeError("❌ GOOGLE_API_KEY não foi encontrada nas variáveis de ambiente.")
+
+genai.configure(api_key=GOOGLE_API_KEY)
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 
 # 🔹 Função utilitária: resumo dos dados do sistema
@@ -34,18 +38,17 @@ def summarize_data():
         Exemplo financeiro: {financeiro[0] if financeiro else "nenhum registro"}
         Exemplo de manutenção: {manutencoes[0] if manutencoes else "nenhuma manutenção"}
         """
-
         return resumo
 
     except Exception as e:
-        return f"Erro ao coletar dados: {str(e)}"
+        return f"⚠️ Erro ao coletar dados: {str(e)}"
 
 
-# 🔹 Endpoint de consulta à IA
+# 🔹 Endpoint principal — Consultor IA
 @router.post("/ai/consult")
 def ai_consult(payload: dict = Body(...)):
     """
-    Consultor IA com integração em tempo real com dados do sistema.
+    Consultor IA com integração Gemini + Firestore.
     """
     question = payload.get("question", "").strip()
     chat_history = payload.get("history", [])
@@ -54,25 +57,28 @@ def ai_consult(payload: dict = Body(...)):
         raise HTTPException(status_code=400, detail="Pergunta não fornecida.")
 
     try:
-        # 1️⃣ Contexto com dados reais
+        # 1️⃣ Dados do sistema
         context = summarize_data()
 
-        # 2️⃣ Monta o prompt da IA
+        # 2️⃣ Monta prompt com contexto real
         full_prompt = f"""
-        Você é o Assistente da Hospedagem, um consultor inteligente da pousada.
-        Responda sempre de forma educada, objetiva e baseada nos dados abaixo.
+        Você é o *Assistente da Hospedagem*, um consultor inteligente de uma pousada.
+        Responda sempre com clareza, empatia e baseando-se nos dados reais do sistema.
 
         {context}
 
-        Pergunta do usuário: {question}
+        Usuário perguntou: "{question}"
         """
 
-        # 3️⃣ Gera resposta com Gemini
+        # 3️⃣ Chamada à API do Gemini
         response = model.generate_content(full_prompt)
 
-        resposta = response.text.strip()
+        # 🟢 IMPORTANTE: nem sempre response.text existe direto!
+        resposta = getattr(response, "text", None)
+        if not resposta:
+            raise ValueError("Resposta vazia ou inválida retornada pelo modelo.")
 
-        # 4️⃣ Armazena histórico no Firestore
+        # 4️⃣ Registrar log no Firestore
         db.collection("ia_logs").add({
             "question": question,
             "answer": resposta,
