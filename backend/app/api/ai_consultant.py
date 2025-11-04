@@ -7,7 +7,8 @@ import openai
 router = APIRouter()
 
 # 🔹 Configuração da API da OpenAI (adicione sua chave no .env)
-openai.api_key = os.getenv("OPENAI_API_KEY")
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 
 # 🔹 Função utilitária: resumir dados em texto simples
