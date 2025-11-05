@@ -149,3 +149,35 @@ def ai_consult(payload: dict = Body(...)):
     except Exception as e:
         print("❌ ERRO NO CONSULTOR IA:", traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Erro no consultor IA: {str(e)}")
+
+
+@router.get("/ai/consult/history")
+def get_history(userId: str):
+    """Obtém o histórico de conversa de um usuário."""
+    try:
+        doc_ref = db.collection("ai_histories").document(userId)
+        doc = doc_ref.get()
+        if doc.exists:
+            return doc.to_dict().get("messages", [])
+        return []  # Sem histórico ainda
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao carregar histórico: {str(e)}")
+
+
+@router.post("/ai/consult/history")
+def save_history(payload: dict = Body(...)):
+    """Salva o histórico completo do usuário."""
+    user_id = payload.get("userId")
+    messages = payload.get("messages", [])
+
+    if not user_id:
+        raise HTTPException(status_code=400, detail="userId é obrigatório.")
+
+    try:
+        db.collection("ai_histories").document(user_id).set({
+            "messages": messages,
+            "updated_at": datetime.datetime.now()
+        })
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao salvar histórico: {str(e)}")

@@ -44,7 +44,7 @@ type Guest = {
   checkIn: string;
   checkOut: string;
   guests: number;
-  amenities: string[];
+
   value?: string;
   notes?: string;
 };
@@ -56,7 +56,7 @@ type Room = {
   type: string;
   status: "disponível" | "ocupado" | "reservado" | "manutenção";
   description: string;
-  amenities: string[];
+ 
   images?: string[];
   // 💡 Campos adicionados para resolver o erro no JSX:
   guest?: string | null; // Nome ou identificador do hóspede (que está no JSX)
@@ -119,19 +119,19 @@ type RoomSeed = Omit<Room, "images"> & {
 };
 
 const FALLBACK_IMAGE =
-  "https://images.unsplash.com/photo-1505692185631-7a516a654f30";
+  "";
 const DOUBLE_SINGLE_IMAGE = new URL(
-  "../../../img/Cama de casal e solteiro.jpg",
+  "",
   import.meta.url,
 ).href;
 const DOUBLE_DOUBLE_IMAGE = new URL(
-  "../../../img/Duas camas de casal.jpg",
+  "",
   import.meta.url,
 ).href;
-const SINGLE_IMAGE = new URL("../../../img/Camas solteiro.jpg", import.meta.url)
+const SINGLE_IMAGE = new URL("", import.meta.url)
   .href;
 const BATHROOM_IMAGE = new URL(
-  "../../../img/Banheiro quartos.jpg",
+  "",
   import.meta.url,
 ).href;
 
@@ -230,15 +230,9 @@ const ROOM_DATA: RoomSeed[] = [
     type: "Quarto Família",
     status: "disponível",
     description:
-      "Primeiro andar com 1 cama de casal e 1 de solteiro. Acomoda até 3 hóspedes com vista lateral para o jardim.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      'TV Smart 43"',
-      "Cofre digital",
-      "Frigobar",
-    ],
-    imageSet: "doubleSingle",
+      "1 cama de casal e 1 de solteiro.",
+  
+    
   },
   {
     id: "RM-106",
@@ -247,14 +241,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "ocupado", 
     description:
       "Primeiro andar com 2 camas de casal e área de estar. Ideal para famílias maiores ou grupos de amigas.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado digital",
-      'TV Smart 50"',
-      "Varanda privativa",
-      "Cafeteira de cápsulas",
-    ],
-    imageSet: "doubleDouble",
+   
   },
   {
     id: "RM-107",
@@ -263,14 +250,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "disponível",
     description:
       "Primeiro andar com 1 cama de casal e 1 de solteiro. Opção versátil para casais com criança.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      "TV",
-      "Escrivaninha",
-      "Roupeiro amplo",
-    ],
-    imageSet: "doubleSingle",
+   
   },
   {
     id: "RM-108",
@@ -279,8 +259,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "manutenção", 
     description:
       "Primeiro andar com 1 cama de casal e 1 de solteiro. Em manutenção preventiva do sistema de climatização.",
-    amenities: ["Wi-Fi", "Ar-condicionado", "TV", "Fechadura eletrônica"],
-    imageSet: "doubleSingle",
+    
   },
   {
     id: "RM-109",
@@ -289,14 +268,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "disponível",
     description:
       "Primeiro andar com 1 cama de casal e 1 de solteiro. Vista para a piscina e iluminação natural abundante.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      "TV",
-      "Cortinas blackout",
-      "Frigobar",
-    ],
-    imageSet: "doubleSingle",
+   
   },
   {
     id: "RM-110",
@@ -305,14 +277,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "disponível",
     description:
       "Primeiro andar com 1 cama de casal e 1 de solteiro. Ambiente silencioso próximo ao jardim interno.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      "TV",
-      "Secador de cabelo",
-      "Amenities premium",
-    ],
-    imageSet: "doubleSingle",
+   
   },
   {
     id: "RM-111",
@@ -321,14 +286,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "ocupado", 
     description:
       "Primeiro andar com 1 cama de casal e 1 de solteiro. Reservado por família com crianças pequenas.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      "TV",
-      "Berço sob demanda",
-      "Serviço de quarto 24h",
-    ],
-    imageSet: "doubleSingle",
+   
   },
   {
     id: "RM-112",
@@ -337,13 +295,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "disponível",
     description:
       "Primeiro andar com 4 camas de solteiro. Perfeito para equipes esportivas ou grupos de amigos.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      "Armários individuais",
-      "Mesa compartilhada",
-    ],
-    imageSet: "single",
+   
   },
   {
     id: "RM-113",
@@ -352,8 +304,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "disponível",
     description:
       "Primeiro andar com 1 cama de casal e 1 de solteiro. Banheiro renovado com chuveiro com aquecimento a gás.",
-    amenities: ["Wi-Fi", "Ar-condicionado", "TV", "Chuveiro pressurizado"],
-    imageSet: "doubleSingle",
+   
   },
   {
     id: "RM-114",
@@ -362,8 +313,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "manutenção", 
     description:
       "Primeiro andar com 1 cama de casal e 1 de solteiro. Passando por revisão elétrica programada.",
-    amenities: ["Wi-Fi", "Ar-condicionado", "TV", "Detector de fumaça"],
-    imageSet: "doubleSingle",
+    
   },
   {
     id: "RM-115",
@@ -372,30 +322,15 @@ const ROOM_DATA: RoomSeed[] = [
     status: "ocupado", 
     description:
       "Primeiro andar com 1 cama de casal e 1 de solteiro. Check-out previsto para amanhã às 11h.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      "TV",
-      "Mesa de trabalho",
-      "Cofre digital",
-    ],
-    imageSet: "doubleSingle",
+   
   },
   {
     id: "RM-116",
     identifier: "116",
     type: "Quarto Família",
     status: "disponível",
-    description:
-      "Primeiro andar com 1 cama de casal e 1 de solteiro. Unidade de esquina com melhor ventilação.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      "TV",
-      "Varanda francesa",
-      "Amenities premium",
-    ],
-    imageSet: "doubleSingle",
+    description:"Primeiro andar com 1 cama de casal e 1 de solteiro. Unidade de esquina com melhor ventilação.",
+      
   },
   {
     id: "RM-200",
@@ -404,13 +339,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "disponível",
     description:
       "Segundo andar com 1 cama de casal. Ambiente planejado para casais em busca de privacidade e conforto.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      'TV Smart 43"',
-      "Amenities premium",
-      "Varanda francesa",
-    ],
+    
   },
   {
     id: "RM-201",
@@ -419,13 +348,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "ocupado", 
     description:
       "Segundo andar com 1 cama de casal. Quarto com vista parcial para o mar, reservado para estadia romântica.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      "TV",
-      "Iluminação dimerizável",
-      "Serviço de quarto",
-    ],
+    
   },
   {
     id: "RM-202",
@@ -434,14 +357,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "disponível",
     description:
       "Segundo andar com 4 camas de solteiro. Ideal para excursões e grupos corporativos em eventos.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      "Lockers individuais",
-      "Mesa compartilhada",
-      "Cortinas blackout",
-    ],
-    imageSet: "single",
+   
   },
   {
     id: "RM-203",
@@ -450,14 +366,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "ocupado", 
     description:
       "Segundo andar com 1 cama de casal e 1 de solteiro. Quartos integrados e preparados para crianças.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      "TV Smart",
-      "Berço sob demanda",
-      "Cofre digital",
-    ],
-    imageSet: "doubleSingle",
+    
   },
   {
     id: "RM-204",
@@ -466,14 +375,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "disponível",
     description:
       "Segundo andar com 1 cama de casal e 1 de solteiro. Banheiro reformado com ducha aquecida e nichos iluminados.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      "TV",
-      "Secador profissional",
-      "Kit amenities completo",
-    ],
-    imageSet: "doubleSingle",
+
   },
   {
     id: "RM-205",
@@ -482,14 +384,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "disponível",
     description:
       "Segundo andar com 2 camas de casal. Living integrado e bancada para refeições rápidas.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado split",
-      'TV 55"',
-      "Cafeteira de cápsulas",
-      "Mini adega",
-    ],
-    imageSet: "doubleDouble",
+   
   },
   {
     id: "RM-206",
@@ -498,14 +393,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "manutenção", 
     description:
       "Segundo andar com 2 camas de casal. Passando por manutenção preventiva do sistema hidráulico.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      "TV 4K",
-      "Cofre digital",
-      "Fechadura eletrônica",
-    ],
-    imageSet: "doubleDouble",
+ 
   },
   {
     id: "RM-207",
@@ -514,13 +402,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "ocupado", 
     description:
       "Segundo andar com 4 camas de solteiro. Reservado por equipe esportiva em competição regional.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      "Armários com tranca",
-      "Mesa para reuniões rápidas",
-    ],
-    imageSet: "single",
+   
   },
   {
     id: "RM-208",
@@ -529,14 +411,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "disponível",
     description:
       "Segundo andar com 2 camas de casal. Sacada com vista panorâmica e kit de boas-vindas diferenciado.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      'TV 55"',
-      "Varanda privativa",
-      "Amenities premium",
-    ],
-    imageSet: "doubleDouble",
+    
   },
   {
     id: "RM-209",
@@ -545,14 +420,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "disponível",
     description:
       "Segundo andar com 2 camas de casal. Destaque para a iluminação natural e área de leitura.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      "TV",
-      "Poltronas de leitura",
-      "Mesa de trabalho",
-    ],
-    imageSet: "doubleDouble",
+  
   },
   {
     id: "RM-210",
@@ -561,14 +429,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "disponível",
     description:
       "Segundo andar com 3 camas de solteiro. Projetado para viajantes solo que desejam compartilhar a mesma suíte.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      "TV",
-      "Armários individuais",
-      "Cortinas blackout",
-    ],
-    imageSet: "single",
+   
   },
   {
     id: "RM-211",
@@ -577,14 +438,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "ocupado", 
     description:
       "Segundo andar com 2 camas de casal. Estadia de longa duração com serviço de limpeza personalizado.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      "TV 4K",
-      "Serviço de quarto 24h",
-      "Cafeteira de cápsulas",
-    ],
-    imageSet: "doubleDouble",
+    
   },
   {
     id: "RM-301",
@@ -593,14 +447,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "disponível",
     description:
       "Terceiro andar com 4 camas de solteiro. Espaço amplo com vista para o mar, ideal para grupos de viagem.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      "Armários individuais",
-      "Mesa compartilhada",
-      "Cortinas blackout",
-    ],
-    imageSet: "single",
+    
   },
   {
     id: "RM-302",
@@ -609,14 +456,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "ocupado", 
     description:
       "Terceiro andar com 4 camas de solteiro. Reservado por grupo de executivos em evento regional.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      "TV",
-      "Lockers com chave",
-      "Mesa de reuniões",
-    ],
-    imageSet: "single",
+   
   },
   {
     id: "RM-303",
@@ -625,13 +465,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "disponível",
     description:
       "Terceiro andar com 4 camas de solteiro. Layout flexível, com cabeceiras independentes e iluminação individual.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      "Mesa compartilhada",
-      "Cortinas blackout",
-    ],
-    imageSet: "single",
+    
   },
   {
     id: "RM-304",
@@ -640,13 +474,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "manutenção", 
     description:
       "Terceiro andar com 4 camas de solteiro. Em manutenção preventiva da iluminação decorativa.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      "Armários individuais",
-      "Mesa de apoio",
-    ],
-    imageSet: "single",
+   
   },
   {
     id: "RM-305",
@@ -655,14 +483,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "disponível",
     description:
       "Terceiro andar com 2 camas de casal. Sacada com vista privilegiada e banheira de hidromassagem.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      'TV 55"',
-      "Banheira de hidromassagem",
-      "Cafeteira de cápsulas",
-    ],
-    imageSet: "doubleDouble",
+ 
   },
   {
     id: "RM-306",
@@ -671,14 +492,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "ocupado", 
     description:
       "Terceiro andar com 2 camas de casal. Reservado por família em estadia de férias prolongada.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      'TV Smart 55"',
-      "Serviço de quarto 24h",
-      "Frigobar abastecido",
-    ],
-    imageSet: "doubleDouble",
+   
   },
   {
     id: "RM-307",
@@ -687,14 +501,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "disponível",
     description:
       "Terceiro andar com 4 camas de solteiro. Perfeito para eventos de confraternização e retiros corporativos.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      "Armários com tranca",
-      "Mesa coletiva",
-      "Cortinas blackout",
-    ],
-    imageSet: "single",
+  
   },
   {
     id: "RM-308",
@@ -703,14 +510,8 @@ const ROOM_DATA: RoomSeed[] = [
     status: "manutenção", 
     description:
       "Terceiro andar com 2 camas de casal. Revisão programada do sistema de climatização central.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado digital",
-      "TV",
-      "Varanda privativa",
-      "Mini adega",
-    ],
-    imageSet: "doubleDouble",
+   
+     
   },
   {
     id: "RM-309",
@@ -719,14 +520,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "disponível",
     description:
       "Terceiro andar com 2 camas de casal. Destaque para o living integrado com vista para o pôr do sol.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      'TV 55"',
-      "Poltronas de leitura",
-      "Mesa de trabalho",
-    ],
-    imageSet: "doubleDouble",
+
   },
   {
     id: "RM-310",
@@ -735,14 +529,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "ocupado", 
     description:
       "Terceiro andar com 2 camas de casal. Reservado para casamento com decoração especial e amenities de boas-vindas.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      "TV 4K",
-      "Champanhe de cortesia",
-      "Cafeteira de cápsulas",
-    ],
-    imageSet: "doubleDouble",
+   
   },
   {
     id: "RM-311",
@@ -751,14 +538,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "disponível",
     description:
       "Terceiro andar com 4 camas de solteiro. Equipado com tomadas individuais e iluminação em LED nos painéis.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      "Armários individuais",
-      "Mesa compartilhada",
-      "Cortinas blackout",
-    ],
-    imageSet: "single",
+ 
   },
   {
     id: "RM-312",
@@ -767,14 +547,7 @@ const ROOM_DATA: RoomSeed[] = [
     status: "disponível",
     description:
       "Terceiro andar com 4 camas de solteiro. Opção flexível com decoração em tons neutros e iluminação natural.",
-    amenities: [
-      "Wi-Fi",
-      "Ar-condicionado",
-      "TV",
-      "Lockers com chave",
-      "Cortinas blackout",
-    ],
-    imageSet: "single",
+    
   },
 ];
 
@@ -915,15 +688,7 @@ function RoomDetailsModal({
                         {selectedRoom.description}
                     </p>
                     
-                    <h3 className="mt-4 text-md font-semibold text-emphasis">Amenidades</h3>
-                    <div className="mt-2 grid grid-cols-2 gap-3 text-sm text-muted-strong">
-                        {selectedRoom.amenities.map((amenity) => (
-                            <div key={amenity} className="flex items-center gap-2">
-                                {getAmenityIcon(amenity)}
-                                <span>{amenity}</span>
-                            </div>
-                        ))}
-                    </div>
+                   
 
                     <div className="mt-6 flex gap-3">
                         <button 
@@ -1059,25 +824,7 @@ function EditModal({
     if (!editingRoom) return null;
     
     // Funções internas (handleAmenityChange) permanecem iguais, mas agora definidas dentro do EditModal
-    const handleAmenityChange = (amenity: string, isChecked: boolean) => {
-        setEditingRoom((prev) => {
-            if (!prev) return null;
-            // ... (lógica de adicionar/remover amenidade) ...
-            const currentAmenities = prev.amenities || [];
-              
-            if (isChecked) {
-                if (!currentAmenities.includes(amenity)) {
-                    return { ...prev, amenities: [...currentAmenities, amenity] };
-                }
-            } else {
-                return { 
-                    ...prev, 
-                    amenities: currentAmenities.filter((a) => a !== amenity) 
-                };
-            }
-            return prev;
-        });
-    };
+  
     
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/70 p-6 backdrop-blur-sm">
@@ -1152,26 +899,7 @@ function EditModal({
                             className="surface-input mt-2 resize-none"
                         />
                     </label>
-                    
-                    {/* 🎯 SEÇÃO DE AMENIDADES */}
-                    <div>
-                        <h3 className="text-sm font-medium text-muted-strong mb-3">
-                            Amenidades
-                        </h3>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-2 gap-x-4">
-                            {ALL_AMENITIES.map((amenity) => (
-                                <label key={amenity} className="flex items-center space-x-2 text-sm text-muted-strong">
-                                    <input
-                                        type="checkbox"
-                                        checked={editingRoom.amenities?.includes(amenity)}
-                                        onChange={(e) => handleAmenityChange(amenity, e.target.checked)}
-                                        className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
-                                    />
-                                    <span>{amenity}</span>
-                                </label>
-                            ))}
-                        </div>
-                    </div>
+                
                     
                     <div className="pt-4">
                         <button type="submit" className="btn-primary w-full gap-2">
@@ -1258,7 +986,7 @@ export default function RoomsOverviewPage() {
             type: data.type || "Desconhecido", 
             status: (data.status ?? "disponível") as Room["status"],
             description: data.description || "",
-            amenities: data.amenities || [],
+            
             images: data.images || [],
             guest: data.guest || "",
             guestNotes: data.guestNotes || "",
@@ -1342,7 +1070,7 @@ useEffect(() => {
         checkIn: data.checkIn ?? "",
         checkOut: data.checkOut ?? "",
         guests: data.guests ?? 1,
-        amenities: data.amenities ?? [],
+  
         value: data.value ?? "",
         notes: data.notes ?? "",
       } as Guest;
@@ -1360,7 +1088,7 @@ useEffect(() => {
           type: data.type || "Desconhecido",
           status: (data.status ?? "disponível") as Room["status"],
           description: data.description || "",
-          amenities: data.amenities || [],
+         
           images: data.images || [],
           guest: data.guest || "",
           guestNotes: data.guestNotes || "",
@@ -1391,7 +1119,7 @@ const unsubRes = onSnapshot(resRef, (snap) => {
       checkIn: data.checkIn ?? "",
       checkOut: data.checkOut ?? "",
       guests: data.guests ?? 1,
-      amenities: data.amenities ?? [],
+    
       value: data.value ?? "",
       notes: data.notes ?? "",
     } as Guest;
@@ -1492,7 +1220,7 @@ alert("✅ Manutenção registrada e quarto atualizado!");
             type: form.type,
             status: form.status,
             description: form.description,
-            amenities: form.amenities, 
+            
         };
 
         await updateDoc(roomRef, dataToUpdate);
@@ -1641,18 +1369,7 @@ setEditingRoom(null);
         {room.description}
       </p>
 
-      {/* 🔹 Amenidades (mantidas) */}
-      <div className="mt-4">
-        <p className="text-xs uppercase text-muted-soft">Amenidades</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {room.amenities.map((amenity) => (
-            <span key={amenity} className="chip-muted">
-              {amenity}
-            </span>
-          ))}
-        </div>
-      </div>
-
+    
       {/* 🔹 Hóspede e observações (novos, só aparecem se estiver reservado ou ocupado) */}
       {(room.status === "ocupado" || room.status === "reservado") && (
   <div className="mt-4 border-t border-slate-200 pt-3 dark:border-slate-700">

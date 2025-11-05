@@ -75,11 +75,7 @@ function ReservationsMovementsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
-        <button className="btn-primary gap-2" onClick={openPricingModal}>
-          Nova Reserva
-        </button>
-      </div>
+      
 
       <Card
         title="Movimentos do Dia"
