@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+
 import Card from "../../components/ui/Card";
 import { Trash2, Plus, Loader2 } from "lucide-react";
 
@@ -24,6 +25,8 @@ interface User {
   password?: string;
   role: string;
 }
+
+
 
 export default function SettingsPage() {
   const [openItem, setOpenItem] = useState<string | null>("property");
@@ -71,23 +74,46 @@ export default function SettingsPage() {
     loadData();
   }, []);
 
-  // 🔸 Salvar configurações
-  async function handleSaveSettings() {
-    try {
-      setSaving(true);
-      const res = await fetch(`${baseUrl}/settings`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settings),
-      });
-      if (!res.ok) throw new Error("Erro ao salvar configurações");
-      alert("Configurações salvas com sucesso!");
-    } catch (error) {
-      alert("Erro ao salvar as configurações.");
-    } finally {
-      setSaving(false);
-    }
+
+  // --- Máscara de CNPJ ---
+const maskCNPJ = (value: string): string => {
+  const cleaned = value.replace(/\D/g, "");
+  return cleaned
+    .replace(/^(\d{2})(\d)/, "$1.$2")
+    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d)/, ".$1/$2")
+    .replace(/(\d{4})(\d)/, "$1-$2")
+    .substring(0, 18);
+};
+
+
+function isValidCNPJ(cnpj: string) {
+  const cleaned = cnpj.replace(/[^\d]/g, "");
+  return cleaned.length === 14;
+}
+
+async function handleSaveSettings() {
+  if (!isValidCNPJ(settings.cnpj)) {
+    alert("CNPJ inválido. Verifique e tente novamente.");
+    return;
   }
+
+  try {
+    setSaving(true);
+    const res = await fetch(`${baseUrl}/settings`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(settings),
+    });
+    if (!res.ok) throw new Error("Erro ao salvar configurações");
+    alert("Configurações salvas com sucesso!");
+  } catch (error) {
+    alert("Erro ao salvar as configurações.");
+  } finally {
+    setSaving(false);
+  }
+}
+
 
   // 🔸 Criar novo usuário
   async function handleAddUser() {
@@ -166,12 +192,17 @@ export default function SettingsPage() {
                   onChange={(e) => setSettings({ ...settings, propertyName: e.target.value })}
                   className="surface-input"
                 />
-                <input
+            <input
   placeholder="CNPJ"
-  value={settings.cnpj}
-  onChange={(e) => setSettings({ ...settings, cnpj: e.target.value })}
+  name="cnpj"
+  value={maskCNPJ(settings.cnpj || "")}
+  onChange={(e) =>
+    setSettings({ ...settings, cnpj: maskCNPJ(e.target.value) })
+  }
   className="surface-input"
 />
+
+
 
                 <input
                   placeholder="Telefone"

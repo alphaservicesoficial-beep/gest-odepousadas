@@ -229,3 +229,79 @@ def get_available_rooms(current_room_id: str | None = None):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao buscar quartos: {e}")
+
+
+# ==========================================================
+# 🔹 GERAR NOVA RESERVA PARA UMA EMPRESA EXISTENTE
+# ==========================================================
+@router.post("/companies/{company_id}/new_reservation")
+def generate_new_reservation(company_id: str, data: dict = Body(...)):
+    """
+    Gera uma nova reserva para uma empresa existente sem apagar a anterior.
+    Atualiza o quarto antigo para disponível e marca o novo como reservado.
+    """
+    try:
+        doc_ref = db.collection("companies").document(company_id)
+        doc = doc_ref.get()
+        if not doc.exists:
+            raise HTTPException(status_code=404, detail="Empresa não encontrada.")
+
+        old_company = doc.to_dict()
+        old_room_id = old_company.get("roomId")
+
+        # --- libera quarto antigo se foi trocado
+        if old_room_id and old_room_id != data.get("roomId"):
+            update_room_status(old_room_id, "disponível")
+
+        # --- gera nova reserva
+        check_in = date.fromisoformat(data.get("checkIn"))
+        check_out = date.fromisoformat(data.get("checkOut"))
+        today = date.today()
+
+        if today < check_in:
+            status = "reservado"
+        elif check_in <= today <= check_out:
+            status = "ocupado"
+        else:
+            status = "disponível"
+
+        room_number = str(data.get("roomNumber") or get_room_number_from_room_id(data.get("roomId")) or "")
+
+        reservation = {
+            "companyId": company_id,
+            "companyName": data.get("name"),
+            "roomId": data.get("roomId"),
+            "roomNumber": room_number,
+            "checkIn": data.get("checkIn"),
+            "checkOut": data.get("checkOut"),
+            "guests": data.get("guests", 1),
+            "value": data.get("value"),
+            "status": status,
+            "notes": data.get("notes", ""),
+            "createdAt": firestore.SERVER_TIMESTAMP,
+        }
+
+        db.collection("reservations").add(reservation)
+
+        # --- atualiza dados principais da empresa (última reserva ativa)
+        doc_ref.update({
+            "roomId": data.get("roomId"),
+            "roomNumber": room_number,
+            "checkIn": data.get("checkIn"),
+            "checkOut": data.get("checkOut"),
+            "guests": data.get("guests"),
+            "value": data.get("value"),
+            "notes": data.get("notes")
+        })
+
+        update_room_status(
+            data["roomId"],
+            status,
+            guest_name=data.get("name"),
+            notes=data.get("notes")
+        )
+
+        return {"message": "Nova reserva criada para a empresa.", "status": status}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao criar nova reserva: {e}")

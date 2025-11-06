@@ -335,6 +335,39 @@ setCompanies(data);
 }
 
 
+async function handleGenerateNewReservation() {
+  if (!form.id) {
+    alert("Empresa não identificada.");
+    return;
+  }
+
+  try {
+    const payload = {
+      ...form,
+      cnpj: form.cnpj?.replace(/\D/g, ""),
+      phone: form.phone?.replace(/\D/g, ""),
+    };
+
+    const response = await fetch(`${baseUrl}/companies/${form.id}/new_reservation`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) throw new Error("Erro ao gerar nova reserva.");
+
+    alert("✅ Nova reserva criada para esta empresa!");
+    await loadCompanies();
+    setIsModalOpen(false);
+    setIsEditing(false);
+    resetForm();
+  } catch (error) {
+    console.error("Erro ao gerar nova reserva:", error);
+    alert("Erro ao gerar nova reserva. Verifique o console.");
+  }
+}
+
+
   
     async function handleDelete(companyToDelete: Company) {
       const confirmDelete = confirm(
@@ -691,17 +724,29 @@ setCompanies(data);
                 
                 {/* Bloco de Ações */}
                 <div className="col-span-6 flex justify-end gap-3 mt-4">
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={() => setIsModalOpen(false)}
-                  >
-                    Cancelar
-                  </button>
-                  <button type="submit" className="btn-primary">
-                    {isEditing ? "Salvar alterações" : "Salvar empresa"}
-                  </button>
-                </div>
+  <button
+    type="button"
+    className="btn-secondary"
+    onClick={() => setIsModalOpen(false)}
+  >
+    Cancelar
+  </button>
+
+  {isEditing && (
+    <button
+      type="button"
+      className="btn-primary"
+      onClick={handleGenerateNewReservation}
+    >
+      Gerar nova reserva
+    </button>
+  )}
+
+  <button type="submit" className="btn-primary">
+    {isEditing ? "Salvar alterações" : "Salvar empresa"}
+  </button>
+</div>
+
               </form>
             </div>
           </div>
