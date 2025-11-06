@@ -242,7 +242,7 @@ def create_new_reservation_from_guest(guest_id: str, data: Guest):
         else:
             status = "disponível"
 
-        # 4️⃣ Criar nova reserva
+        # 4️⃣ Criar NOVA RESERVA (não altera a antiga)
         new_reservation = {
             "guestId": guest_id,
             "guestName": data.fullName,
@@ -257,7 +257,7 @@ def create_new_reservation_from_guest(guest_id: str, data: Guest):
         }
         db.collection("reservations").add(new_reservation)
 
-        # 5️⃣ Atualizar hóspede com dados atuais da nova reserva
+        # 5️⃣ Atualizar hóspede com dados atuais, sem mexer nas reservas antigas
         guest_ref.update({
             "fullName": data.fullName,
             "cpf": data.cpf,
@@ -275,7 +275,7 @@ def create_new_reservation_from_guest(guest_id: str, data: Guest):
         # 6️⃣ Atualizar status do quarto
         update_room_status(data.roomId, status, guest_name=data.fullName, notes=data.notes)
 
-        return {"message": "Nova reserva criada e hóspede atualizado com sucesso."}
+        return {"message": "Nova reserva criada e hóspede atualizado com sucesso (reservas antigas preservadas)."}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

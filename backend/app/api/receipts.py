@@ -4,15 +4,17 @@ from fastapi.responses import StreamingResponse
 from io import BytesIO
 from datetime import datetime
 from app.core.firebase import db
-
-# opcional: pip install reportlab
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import mm
 
 router = APIRouter()
 
+# =======================================================
+# 🔹 Funções auxiliares
+# =======================================================
 def _brl(value) -> str:
+    """Formata valores em reais (R$ 1.234,56)."""
     try:
         v = float(str(value).replace(",", "."))
     except Exception:
@@ -20,7 +22,9 @@ def _brl(value) -> str:
     s = f"R$ {v:,.2f}"
     return s.replace(",", "X").replace(".", ",").replace("X", ".")
 
+
 def _resolve_room_number(data: dict) -> str:
+    """Retorna o número do quarto (roomNumber ou derivado do roomId)."""
     rn = (data or {}).get("roomNumber")
     if rn:
         return str(rn)
@@ -32,16 +36,19 @@ def _resolve_room_number(data: dict) -> str:
         number = (snap.to_dict() or {}).get("number")
         if number:
             return str(number)
-    # fallback: extrai dígitos de algo como "RM-105"
     import re
     digits = "".join(re.findall(r"\d+", room_id))
     return digits or "—"
 
+
+# =======================================================
+# 🔹 Gerar PDF do comprovante de reserva
+# =======================================================
 @router.get("/reservations/{reservation_id}/receipt")
 def generate_reservation_receipt(reservation_id: str):
     """
-    Gera um PDF de comprovante da reserva (hóspede/empresa),
-    usando dados de /settings/property para cabeçalho (nome, endereço, CNPJ).
+    Gera um PDF de comprovante da reserva,
+    usando dados de /settings/main para cabeçalho (nome, endereço, CNPJ, etc).
     """
     # --- busca reserva ---
     doc = db.collection("reservations").document(reservation_id).get()
@@ -49,15 +56,15 @@ def generate_reservation_receipt(reservation_id: str):
         raise HTTPException(status_code=404, detail="Reserva não encontrada.")
     res = doc.to_dict() or {}
 
-    # --- busca settings (cabeçalho) ---
-    sdoc = db.collection("settings").document("property").get()
+    # --- busca configurações da pousada ---
+    sdoc = db.collection("settings").document("main").get()
     settings = sdoc.to_dict() if sdoc.exists else {}
     prop_name = settings.get("propertyName", "Pousada")
     prop_addr = settings.get("address", "")
-    prop_cnpj = settings.get("cnpj", settings.get("CNPJ", ""))  # aceita CNPJ ou cnpj
+    prop_cnpj = settings.get("cnpj", "")  # ✅ agora vem do documento main
     prop_phone = settings.get("phone", "")
 
-    # --- dados de exibição ---
+    # --- dados da reserva ---
     guest_or_company = res.get("guestName") or res.get("companyName") or "—"
     room_number = _resolve_room_number(res)
     check_in = res.get("checkIn", "—")
@@ -69,7 +76,7 @@ def generate_reservation_receipt(reservation_id: str):
     total = _brl(res.get("value", 0))
     generated_at = datetime.now().strftime("%d/%m/%Y %H:%M")
 
-    # --- monta PDF em memória ---
+    # --- cria PDF ---
     buf = BytesIO()
     c = canvas.Canvas(buf, pagesize=A4)
     width, height = A4
@@ -103,7 +110,7 @@ def generate_reservation_receipt(reservation_id: str):
     c.drawRightString(width - x_margin, y, f"Emitido em {generated_at}")
     y -= 10 * mm
 
-    # Corpo
+    # Corpo do comprovante
     lines = [
         ("Nome/Empresa:", guest_or_company),
         ("ID da Reserva:", reservation_id),
@@ -123,6 +130,7 @@ def generate_reservation_receipt(reservation_id: str):
         c.drawString(x_margin + 45 * mm, y, str(value))
         y -= 7 * mm
 
+    # Rodapé
     y -= 6 * mm
     c.setFont("Helvetica-Oblique", 9)
     c.drawString(
@@ -131,7 +139,6 @@ def generate_reservation_receipt(reservation_id: str):
         "Este documento comprova a reserva realizada e poderá ser solicitado no check-in."
     )
 
-    # rodapé
     c.showPage()
     c.save()
     buf.seek(0)

@@ -14,6 +14,7 @@ interface SettingsData {
   cancellationPolicy: string;
   wifiPassword: string;
   notes: string;
+  cnpj: string; 
 }
 
 interface User {
@@ -36,6 +37,7 @@ export default function SettingsPage() {
     cancellationPolicy: "Cancelamentos devem ser informados com 48h de antecedência.",
     wifiPassword: "",
     notes: "",
+    cnpj: "",
   });
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -164,6 +166,13 @@ export default function SettingsPage() {
                   onChange={(e) => setSettings({ ...settings, propertyName: e.target.value })}
                   className="surface-input"
                 />
+                <input
+  placeholder="CNPJ"
+  value={settings.cnpj}
+  onChange={(e) => setSettings({ ...settings, cnpj: e.target.value })}
+  className="surface-input"
+/>
+
                 <input
                   placeholder="Telefone"
                   value={settings.phone}
