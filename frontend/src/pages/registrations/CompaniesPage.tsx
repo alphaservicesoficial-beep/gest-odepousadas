@@ -485,7 +485,7 @@ setCompanies(data);
         {isModalOpen && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/70 p-6 backdrop-blur-sm">
             {/* 💡 LARGURA DO MODAL DEFINIDA AQUI: max-w-3xl */}
-            <div className="w-full max-w-3xl rounded-2xl border border-slate-200 bg-white p-6 text-slate-700 shadow-2xl transition-colors dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
+            <div className="w-full max-w-5xl rounded-2xl border border-slate-200 bg-white p-6 text-slate-700 shadow-2xl transition-colors dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
               <div className="flex items-start justify-between">
                 <div>
                   <h2 className="text-lg font-semibold text-emphasis">
@@ -509,13 +509,11 @@ setCompanies(data);
   
               {/* FORMULÁRIO (Usando 6 colunas) */}
               <form className="mt-6 grid grid-cols-6 gap-4" onSubmit={handleSave}>
-                {/* === Seção de Dados da Empresa === */}
-                <div className="col-span-6 text-md font-bold mb-2 text-emphasis">
-                  Informações da Empresa
-                </div>
+            
+  
   
                 {/* Razão social */}
-                <label className="flex flex-col col-span-3">
+                <label className="flex flex-col col-span-2">
                   <span className="text-sm mb-1">Razão social</span>
                   <input
                     name="name" 
@@ -528,8 +526,8 @@ setCompanies(data);
                 </label>
   
                 {/* Contato Principal */}
-                <label className="flex flex-col col-span-3">
-                  <span className="text-sm mb-1">Contato principal</span>
+                <label className="flex flex-col col-span-2">
+                  <span className="text-sm mb-1">Contato</span>
                   <input
                     name="mainContact" 
                     required
@@ -566,23 +564,35 @@ setCompanies(data);
                     placeholder="contato@empresa.com"
                   />
                 </label>
+
+    {/* Telefone */}
+    <label className="flex flex-col col-span-2">
+      <span className="text-sm mb-1">Telefone</span>
+      <input
+        name="phone"
+        required
+        value={maskPhone(form.phone || "")}
+        onChange={handleFormChange}
+        className="surface-input"
+        placeholder="(00) 00000-0000"
+      />
+    </label>
   
-                {/* Telefone */}
+                 {/* Valor (R$) */}
                 <label className="flex flex-col col-span-2">
-                  <span className="text-sm mb-1">Telefone</span>
+                  <span className="text-sm mb-1">Valor (R$)</span>
                   <input
-                    name="phone" 
-                    required
-                    value={maskPhone(form.phone || "")}
-                    onChange={handleFormChange}
+                    name="value" 
                     className="surface-input"
-                    placeholder="(00) 00000-0000"
+                    value={form.value || ""}
+                    onChange={handleFormChange} 
+                    placeholder="Ex: 500,00"
                   />
                 </label>
   
                 {/* --- Separador de Seção --- */}
                 <div className="col-span-6 border-t border-slate-200 pt-4 dark:border-slate-800 mt-2">
-                  <p className="text-md font-bold text-emphasis mb-2">Detalhes da Reserva (Membros da Empresa)</p>
+                  <p className="text-md font-bold text-emphasis mb-2">Detalhes da Reserva </p>
                 </div>
   
                 {/* Nº do quarto (FILTRADO) */}
@@ -626,7 +636,7 @@ setCompanies(data);
   
                 {/* Nº de pessoas */}
                 <label className="flex flex-col col-span-2">
-                  <span className="text-sm mb-1">Nº de pessoas</span>
+                  <span className="text-sm mb-1">Nº pessoas</span>
                   <input
                     name="guests" 
                     type="number"
@@ -639,21 +649,11 @@ setCompanies(data);
                   />
                 </label>
   
-                {/* Valor (R$) */}
-                <label className="flex flex-col col-span-2">
-                  <span className="text-sm mb-1">Valor (R$)</span>
-                  <input
-                    name="value" 
-                    className="surface-input"
-                    value={form.value || ""}
-                    onChange={handleFormChange} 
-                    placeholder="Ex: 500,00"
-                  />
-                </label>
+               
                 
                 {/* Data de entrada */}
-                <label className="flex flex-col col-span-3">
-                  <span className="text-sm mb-1">Data de entrada</span>
+                <label className="flex flex-col col-span-1">
+                  <span className="text-sm mb-1">Entrada</span>
                   <input
                     name="checkIn" 
                     type="date"
@@ -664,8 +664,8 @@ setCompanies(data);
                 </label>
   
                 {/* Data de saída */}
-                <label className="flex flex-col col-span-3">
-                  <span className="text-sm mb-1">Data de saída</span>
+                <label className="flex flex-col col-span-1">
+                  <span className="text-sm mb-1">Saída</span>
                   <input
                     name="checkOut" 
                     type="date"

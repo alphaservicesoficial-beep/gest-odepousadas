@@ -1169,7 +1169,7 @@ const unsubRes = onSnapshot(resRef, (snap) => {
 
     try {
       // Envia a manutenção para o backend
-      const response = await fetch(`${baseUrl}/reservations`, {
+      const response = await fetch(`${baseUrl}/maintenance`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1346,10 +1346,7 @@ setEditingRoom(null);
       className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-700 shadow-sm transition hover:border-primary hover:shadow-lg dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-200"
     >
       <div className="space-y-3">
-        <RoomImageCarousel
-          images={room.images ?? []}
-          alt={`Quarto ${room.identifier}`}
-        />
+       
 
         <div className="flex items-center justify-between">
           <div>

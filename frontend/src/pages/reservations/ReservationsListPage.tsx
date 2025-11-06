@@ -235,7 +235,7 @@ function ReservationsListPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-0">
       <Card
         title="Lista de Reservas"
         description="Acompanhe todas as reservas com filtros e emissão de comprovantes."
@@ -279,89 +279,195 @@ function ReservationsListPage() {
           </div>
         </div>
 
-        {/* Tabela */}
-        <div className="hidden overflow-x-auto md:block">
-          <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-800">
-            <thead className="surface-table-head">
-              <tr>
-                <th className="px-4 py-3">ID</th>
-                <th className="px-4 py-3">Hóspede/Empresa</th>
-                <th className="px-4 py-3">Quarto</th>
-                <th className="px-4 py-3">#Hósp.</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Check-in</th>
-                <th className="px-4 py-3">Check-out</th>
-                <th className="px-4 py-3">Pagamento</th>
-                <th className="px-4 py-3">Total</th>
-                <th className="px-4 py-3 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-              {filtered.map((r) => (
-                <tr key={r.id} className="surface-table-row">
-                  <td className="px-4 py-3 text-xs font-semibold text-muted-strong">#{r.id.slice(0, 6)}</td>
-                  <td className="px-4 py-3">{r.guestOrCompany}</td>
-                  <td className="px-4 py-3">{r.room}</td>
-                  <td className="px-4 py-3 text-center">{r.guestsCount}</td>
+        {/* 💻 Layout desktop */}
+<div className="hidden overflow-x-auto md:block">
+  <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-800">
+    <thead className="surface-table-head">
+      <tr>
+        <th className="px-4 py-3">ID</th>
+        <th className="px-4 py-3">Hóspede/Empresa</th>
+        <th className="px-4 py-3">Quarto</th>
+        <th className="px-4 py-3">#Hósp.</th>
+        <th className="px-4 py-3">Status</th>
+        <th className="px-4 py-3">Check-in</th>
+        <th className="px-4 py-3">Check-out</th>
+        <th className="px-4 py-3">Pagamento</th>
+        <th className="px-4 py-3">Total</th>
+        <th className="px-4 py-3 text-right">Ações</th>
+      </tr>
+    </thead>
+    <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+      {filtered.map((r) => (
+        <tr key={r.id} className="surface-table-row">
+          <td className="px-4 py-3 text-xs font-semibold text-muted-strong">
+            #{r.id.slice(0, 6)}
+          </td>
+          <td className="px-4 py-3">{r.guestOrCompany}</td>
+          <td className="px-4 py-3">{r.room}</td>
+          <td className="px-4 py-3 text-center">{r.guestsCount}</td>
 
-                  <td className="px-4 py-3">
-                    <StatusBadge
-                      label={r.reservationStatus}
-                      status={r.reservationStatus === "confirmado" ? "success" : r.reservationStatus === "cancelado" ? "danger" : "warning"}
-                    />
-                  </td>
+          <td className="px-4 py-3">
+            <StatusBadge
+              label={r.reservationStatus}
+              status={
+                r.reservationStatus === "confirmado"
+                  ? "success"
+                  : r.reservationStatus === "cancelado"
+                  ? "danger"
+                  : "warning"
+              }
+            />
+          </td>
 
-                  <td className="px-4 py-3">
-                    {r.checkIn}
-                    <div className="mt-1">
-                      <StatusBadge
-                        label={r.checkInStatus}
-                        status={r.checkInStatus === "concluido" ? "success" : r.checkInStatus === "cancelado" ? "danger" : "warning"}
-                      />
-                    </div>
-                  </td>
+          <td className="px-4 py-3">
+            {r.checkIn}
+            <div className="mt-1">
+              <StatusBadge
+                label={r.checkInStatus}
+                status={
+                  r.checkInStatus === "concluido"
+                    ? "success"
+                    : r.checkInStatus === "cancelado"
+                    ? "danger"
+                    : "warning"
+                }
+              />
+            </div>
+          </td>
 
-                  <td className="px-4 py-3">
-                    {r.checkOut}
-                    <div className="mt-1">
-                      <StatusBadge
-                        label={r.checkOutStatus}
-                        status={r.checkOutStatus === "concluido" ? "success" : r.checkOutStatus === "cancelado" ? "danger" : "warning"}
-                      />
-                    </div>
-                  </td>
+          <td className="px-4 py-3">
+            {r.checkOut}
+            <div className="mt-1">
+              <StatusBadge
+                label={r.checkOutStatus}
+                status={
+                  r.checkOutStatus === "concluido"
+                    ? "success"
+                    : r.checkOutStatus === "cancelado"
+                    ? "danger"
+                    : "warning"
+                }
+              />
+            </div>
+          </td>
 
-                  <td className="px-4 py-3">
-                    <StatusBadge
-                      label={r.paymentStatus}
-                      status={r.paymentStatus === "confirmado" ? "success" : r.paymentStatus === "cancelado" ? "danger" : "warning"}
-                    />
-                  </td>
+          <td className="px-4 py-3">
+            <StatusBadge
+              label={r.paymentStatus}
+              status={
+                r.paymentStatus === "confirmado"
+                  ? "success"
+                  : r.paymentStatus === "cancelado"
+                  ? "danger"
+                  : "warning"
+              }
+            />
+          </td>
 
-                  <td className="px-4 py-3">{r.total}</td>
+          <td className="px-4 py-3">{r.total}</td>
 
-                  <td className="px-4 py-3 text-right">
-                    <button className="btn-primary btn-sm" onClick={() => openModal(r.id)}>
-                      Gerenciar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={10} className="px-4 py-6 text-center text-sm text-muted">
-                    Nenhuma reserva encontrada.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+          <td className="px-4 py-3 text-right">
+            <button className="btn-primary btn-sm" onClick={() => openModal(r.id)}>
+              Gerenciar
+            </button>
+          </td>
+        </tr>
+      ))}
+      {filtered.length === 0 && (
+        <tr>
+          <td colSpan={10} className="px-4 py-6 text-center text-sm text-muted">
+            Nenhuma reserva encontrada.
+          </td>
+        </tr>
+      )}
+    </tbody>
+  </table>
+</div>
+
+{/* 📱 Layout mobile */}
+<div className="mt-4 space-y-3 md:hidden">
+  {filtered.length > 0 ? (
+    filtered.map((r) => (
+      <div key={r.id} className="surface-toolbar flex flex-col gap-2 p-4">
+        <p className="text-emphasis font-semibold flex items-center justify-between">
+          <span>#{r.id.slice(0, 6)}</span>
+          <button className="btn-primary btn-xs" onClick={() => openModal(r.id)}>
+            Gerenciar
+          </button>
+        </p>
+
+        <div className="text-sm text-muted space-y-1">
+          <p>Hóspede/Empresa: {r.guestOrCompany}</p>
+          <p>Quarto: {r.room}</p>
+          <p>Hóspedes: {r.guestsCount}</p>
+          <p>
+            Status:{" "}
+            <StatusBadge
+              label={r.reservationStatus}
+              status={
+                r.reservationStatus === "confirmado"
+                  ? "success"
+                  : r.reservationStatus === "cancelado"
+                  ? "danger"
+                  : "warning"
+              }
+            />
+          </p>
+          <p>
+            Check-in: {r.checkIn}{" "}
+            <StatusBadge
+              label={r.checkInStatus}
+              status={
+                r.checkInStatus === "concluido"
+                  ? "success"
+                  : r.checkInStatus === "cancelado"
+                  ? "danger"
+                  : "warning"
+              }
+            />
+          </p>
+          <p>
+            Check-out: {r.checkOut}{" "}
+            <StatusBadge
+              label={r.checkOutStatus}
+              status={
+                r.checkOutStatus === "concluido"
+                  ? "success"
+                  : r.checkOutStatus === "cancelado"
+                  ? "danger"
+                  : "warning"
+              }
+            />
+          </p>
+          <p>
+            Pagamento:{" "}
+            <StatusBadge
+              label={r.paymentStatus}
+              status={
+                r.paymentStatus === "confirmado"
+                  ? "success"
+                  : r.paymentStatus === "cancelado"
+                  ? "danger"
+                  : "warning"
+              }
+            />
+          </p>
+          <p>Total: {r.total}</p>
         </div>
+      </div>
+    ))
+  ) : (
+    <p className="text-sm text-muted italic text-center">
+      Nenhuma reserva encontrada.
+    </p>
+  )}
+</div>
+
       </Card>
 
       {/* Modal de ações */}
       {isModalOpen && selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-6 backdrop-blur-sm">
+        <div className="fixed inset-0 y-0 z-50 flex items-center justify-center bg-slate-950/70 p-6 backdrop-blur-sm">
           <div className="w-full max-w-[22rem] rounded-2xl border border-slate-200 bg-white p-6 text-slate-700 shadow-2xl dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
             <div className="flex items-start justify-between">
               <div>

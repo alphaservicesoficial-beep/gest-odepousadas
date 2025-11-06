@@ -70,7 +70,7 @@ function FinancialIncomePage() {
           </button>
         </div>
 
-        <div className="mt-6 overflow-x-auto">
+        <div className="mt-4 hidden overflow-x-auto md:block">
           <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-800">
             <thead>
               <tr>
@@ -94,6 +94,23 @@ function FinancialIncomePage() {
             </tbody>
           </table>
         </div>
+ 
+        {/* 📱 Layout mobile */}
+        <div className="mt-4 space-y-3 md:hidden">
+          {incomes.map((expense) => (
+            <div key={expense.id} className="surface-toolbar flex flex-col gap-2 p-4">
+              <p className="text-emphasis">{expense.description}</p>
+              <div className="text-sm text-muted">
+                <p>Descrição: {expense.description}</p>
+                <p>Data: {expense.date}</p>
+              </div>
+              <p className="font-semibold text-emphasis">
+                R$ {expense.amount.toFixed(2).replace(".", ",")}
+              </p>
+            </div>
+          ))}
+        </div>
+
       </Card>
 
       {isCreateModalOpen && (

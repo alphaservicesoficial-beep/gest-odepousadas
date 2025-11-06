@@ -56,7 +56,12 @@ export default function FinancialDashboardPage() {
   const { kpis, paymentOverview, insights, receivablesCompanies, receivablesGeneral } = data;
 
   return (
-    <div className="space-y-6">
+
+<div className="space-y-6">
+
+
+
+
       {/* 🔹 Cabeçalho da página */}
       <section>
         <h1 className="text-2xl font-semibold text-emphasis">
@@ -68,7 +73,8 @@ export default function FinancialDashboardPage() {
       </section>
 
       {/* 🔹 KPIs principais */}
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid w-full gap-4 sm:grid-cols-2 xl:grid-cols-4">
+
         <KpiCard label="Receita bruta" value={kpis.grossRevenue} tone="success" />
         <KpiCard label="Contas a receber" value={kpis.receivables} tone="info" />
         <KpiCard label="Despesas" value={kpis.expenses} tone="warning" />
@@ -76,7 +82,7 @@ export default function FinancialDashboardPage() {
       </section>
 
       {/* 🔹 Pagamentos + Insights */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid w-full gap-6 lg:grid-cols-3">
         <Card
           title="Visão geral de pagamentos"
           description="Distribuição por método de pagamento"
@@ -114,74 +120,122 @@ export default function FinancialDashboardPage() {
       </div>
 
       {/* 🔹 Contas a Receber */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card title="Contas a receber - Empresas" description="Contratos corporativos">
-          {receivablesCompanies.length === 0 ? (
-            <p className="text-sm text-muted italic">Nenhum registro corporativo.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-800">
-                <thead>
-                  <tr>
-                    <th className="px-4 py-3">Cliente</th>
-                    <th className="px-4 py-3">Vencimento</th>
-                    <th className="px-4 py-3">Valor</th>
-                    <th className="px-4 py-3">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {receivablesCompanies.map((r) => (
-                    <tr key={r.id}>
-                      <td className="px-4 py-3">{r.name}</td>
-                      <td className="px-4 py-3 text-muted">{r.dueDate}</td>
-                      <td className="px-4 py-3">{r.amount}</td>
-                      <td className="px-4 py-3">
-                        <StatusBadge
-                          label={r.status}
-                          status={r.status === "Pago" ? "success" : "warning"}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      <div className="grid w-full gap-6 lg:grid-cols-2">
+       <Card title="Contas a receber - Empresas" description="Contratos corporativos">
+  {receivablesCompanies.length === 0 ? (
+    <p className="text-sm text-muted italic">Nenhum registro corporativo.</p>
+  ) : (
+    <>
+      {/* 💻 Layout desktop */}
+      <div className="mt-4 hidden overflow-x-auto md:block">
+        <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-800">
+          <thead>
+            <tr>
+              <th className="px-4 py-3">Cliente</th>
+              <th className="px-4 py-3">Vencimento</th>
+              <th className="px-4 py-3">Valor</th>
+              <th className="px-4 py-3">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {receivablesCompanies.map((r) => (
+              <tr key={r.id}>
+                <td className="px-4 py-3">{r.name}</td>
+                <td className="px-4 py-3 text-muted">{r.dueDate}</td>
+                <td className="px-4 py-3">{r.amount}</td>
+                <td className="px-4 py-3">
+                  <StatusBadge
+                    label={r.status}
+                    status={r.status === "Pago" ? "success" : "warning"}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* 📱 Layout mobile */}
+      <div className="mt-4 space-y-3 md:hidden">
+        {receivablesCompanies.map((r) => (
+          <div key={r.id} className="surface-toolbar flex flex-col gap-2 p-4">
+            <p className="text-emphasis font-semibold">{r.name}</p>
+            <div className="text-sm text-muted space-y-1">
+              <p>Vencimento: {r.dueDate}</p>
+              <p>Valor: R$ {r.amount}</p>
+              <p>
+                Status:{" "}
+                <StatusBadge
+                  label={r.status}
+                  status={r.status === "Pago" ? "success" : "warning"}
+                />
+              </p>
             </div>
-          )}
-        </Card>
+          </div>
+        ))}
+      </div>
+    </>
+  )}
+</Card>
+
 
         <Card title="Contas a receber - Geral" description="Reservas individuais">
-          {receivablesGeneral.length === 0 ? (
-            <p className="text-sm text-muted italic">Nenhum registro encontrado.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-800">
-                <thead>
-                  <tr>
-                    <th className="px-4 py-3">Cliente</th>
-                    <th className="px-4 py-3">Vencimento</th>
-                    <th className="px-4 py-3">Valor</th>
-                    <th className="px-4 py-3">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {receivablesGeneral.map((r) => (
-                    <tr key={r.id}>
-                      <td className="px-4 py-3">{r.name}</td>
-                      <td className="px-4 py-3 text-muted">{r.dueDate}</td>
-                      <td className="px-4 py-3">{r.amount}</td>
-                      <td className="px-4 py-3">
-                        <StatusBadge
-                          label={r.status}
-                          status={r.status === "Pago" ? "success" : "warning"}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+  {receivablesGeneral.length === 0 ? (
+    <p className="text-sm text-muted italic">Nenhum registro encontrado.</p>
+  ) : (
+    <>
+      {/* 💻 Layout desktop */}
+      <div className="mt-4 hidden overflow-x-auto md:block">
+        <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-800">
+          <thead>
+            <tr>
+              <th className="px-4 py-3">Cliente</th>
+              <th className="px-4 py-3">Vencimento</th>
+              <th className="px-4 py-3">Valor</th>
+              <th className="px-4 py-3">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {receivablesGeneral.map((r) => (
+              <tr key={r.id}>
+                <td className="px-4 py-3">{r.name}</td>
+                <td className="px-4 py-3 text-muted">{r.dueDate}</td>
+                <td className="px-4 py-3">{r.amount}</td>
+                <td className="px-4 py-3">
+                  <StatusBadge
+                    label={r.status}
+                    status={r.status === "Pago" ? "success" : "warning"}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* 📱 Layout mobile */}
+      <div className="mt-4 space-y-3 md:hidden">
+        {receivablesGeneral.map((r) => (
+          <div key={r.id} className="surface-toolbar flex flex-col gap-2 p-4">
+            <p className="text-emphasis font-semibold">{r.name}</p>
+            <div className="text-sm text-muted space-y-1">
+              <p>Vencimento: {r.dueDate}</p>
+              <p>Valor: R$ {r.amount}</p>
+              <p>
+                Status:{" "}
+                <StatusBadge
+                  label={r.status}
+                  status={r.status === "Pago" ? "success" : "warning"}
+                />
+              </p>
             </div>
-          )}
-        </Card>
+          </div>
+        ))}
+      </div>
+    </>
+  )}
+</Card>
+
       </div>
     </div>
   );

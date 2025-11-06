@@ -256,6 +256,55 @@ async function handleSave(e: FormEvent) {
   }
 }
 
+
+async function handleGenerateNewReservation() {
+  try {
+    if (!form.id) {
+      alert("Hóspede não encontrado.");
+      return;
+    }
+
+    // 🔹 Cria o corpo da nova reserva baseado no formulário atual
+    const newReservationData = {
+      fullName: form.fullName,
+      cpf: form.cpf?.replace(/\D/g, ""),
+      phone: form.phone?.replace(/\D/g, ""),
+      email: form.email,
+      roomId: form.roomId,
+      checkIn: form.checkIn,
+      checkOut: form.checkOut,
+      guests: form.guests,
+      value: form.value,
+      notes: form.notes,
+    };
+
+    // 🔹 Faz a requisição para a rota específica que usa o hóspede existente
+    const response = await fetch(
+      `${baseUrl}/guests/${form.id}/new_reservation`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newReservationData),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Erro ao criar nova reserva.");
+    }
+
+    alert("✅ Nova reserva criada com sucesso!");
+    await loadData();
+    setIsModalOpen(false);
+    setIsEditing(false);
+    resetForm();
+  } catch (error) {
+    console.error("Erro ao gerar nova reserva:", error);
+    alert("Erro ao gerar nova reserva. Tente novamente.");
+  }
+}
+
+
 // --- Excluir hóspede ---
 async function handleDelete(guestToDelete: Guest) {
   if (!confirm("Tem certeza que deseja excluir este hóspede?")) return;
@@ -339,7 +388,7 @@ async function handleDelete(guestToDelete: Guest) {
         
 
         {/* Tabela de Hóspedes */}
-        <div className="overflow-x-auto">
+        <div className="hidden overflow-x-auto md:block">
           <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-800">
             <thead className="surface-table-head">
               <tr>
@@ -389,6 +438,39 @@ async function handleDelete(guestToDelete: Guest) {
             </tbody>
           </table>
         </div>
+
+
+        {/* Lista Mobile */}
+         <div className="space-y-3 md:hidden">
+          {filteredGuests.map((g) => (
+            <div
+            key={g.id}
+            className="surface-toolbar flex flex-col gap-2 p-4"
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-emphasis">{g.fullName}</p>
+                <button
+                className="btn-secondary btn-sm"
+                onClick={() => setSelectedGuest(g)}
+                  >
+                    Ver detalhes
+                  </button>
+            </div>
+             <div className="grid gap-1 text-xs text-muted-strong">
+              <span>CPF: {maskCPF(g.cpf)}</span>
+              <span>Contato: {g.roomNumber}</span>
+               <span>E-mail: {g.email}</span>
+ </div>
+ </div>
+  ))}
+ {filteredGuests.length === 0 && (
+<div className="py-4 text-center text-muted">
+   Nenhum hóspede encontrada.
+</div>
+ )}
+ </div>
+       
+       
       </Card>
 
       {/* Modal de criar/editar (AGORA LARGO) */}
@@ -430,7 +512,7 @@ async function handleDelete(guestToDelete: Guest) {
 
               {/* CPF / Documento */}
               <label className="flex flex-col col-span-3">
-                <span className="text-sm mb-1">CPF / Documento</span>
+                <span className="text-sm mb-1">CPF </span>
                 <input
                   name="cpf"
                   className="surface-input"
@@ -567,17 +649,29 @@ async function handleDelete(guestToDelete: Guest) {
               </label>
 
               <div className="col-span-6 flex justify-end gap-3 mt-4">
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={() => setIsModalOpen(false)}
-                >
-                  Cancelar
-                </button>
-                <button type="submit" className="btn-primary">
-                  {isEditing ? "Salvar alterações" : "Salvar hóspede"}
-                </button>
-              </div>
+  <button
+    type="button"
+    className="btn-secondary"
+    onClick={() => setIsModalOpen(false)}
+  >
+    Cancelar
+  </button>
+
+  {isEditing && (
+    <button
+      type="button"
+        className="btn-primary"
+      onClick={handleGenerateNewReservation}
+    >
+      Gerar nova reserva
+    </button>
+  )}
+
+  <button type="submit" className="btn-primary">
+    {isEditing ? "Salvar alterações" : "Salvar hóspede"}
+  </button>
+</div>
+
             </form>
           </div>
         </div>

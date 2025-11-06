@@ -11,30 +11,40 @@ interface Message {
 }
 
 export default function AIConsultantPage() {
+  // ✅ Carrega do localStorage diretamente na inicialização
+  const [messages, setMessages] = useState<Message[]>(() => {
+    try {
+      const saved = localStorage.getItem("ai_chat_history");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
   const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
-  // 🔹 Carregar histórico do localStorage ao iniciar
+  // 🔹 Salva histórico sempre que as mensagens mudarem
   useEffect(() => {
-    const saved = localStorage.getItem("ai_chat_history");
-    if (saved) setMessages(JSON.parse(saved));
-  }, []);
-
-  // 🔹 Salvar histórico sempre que atualizar
-  useEffect(() => {
-    localStorage.setItem("ai_chat_history", JSON.stringify(messages));
-    // Scroll automático para o final
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messages.length > 0) {
+      localStorage.setItem("ai_chat_history", JSON.stringify(messages));
+    }
   }, [messages]);
+
+  // 🔹 Scroll automático para a última mensagem
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
 
   async function handleSend(e?: React.FormEvent) {
     if (e) e.preventDefault();
     if (!question.trim()) return;
 
     const newMessage: Message = { role: "user", content: question };
-    setMessages((prev) => [...prev, newMessage]);
+    const updatedMessages = [...messages, newMessage];
+    setMessages(updatedMessages);
+    setQuestion("");
     setLoading(true);
 
     try {
@@ -43,7 +53,7 @@ export default function AIConsultantPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           question,
-          history: messages,
+          history: updatedMessages,
         }),
       });
 
@@ -52,7 +62,6 @@ export default function AIConsultantPage() {
         ...prev,
         { role: "assistant", content: data.answer || "Sem resposta." },
       ]);
-      setQuestion(""); // 🔹 limpa o input após envio
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -63,7 +72,7 @@ export default function AIConsultantPage() {
     }
   }
 
-  // 🔹 Enviar com Enter e Shift+Enter para nova linha
+  // 🔹 Enviar com Enter (e Shift+Enter para quebrar linha)
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -71,15 +80,31 @@ export default function AIConsultantPage() {
     }
   };
 
+  // 🔹 Botão para limpar conversa
+  function handleClearChat() {
+    localStorage.removeItem("ai_chat_history");
+    setMessages([]);
+  }
+
   return (
     <div className="space-y-6">
       <Card
         title="Consultor IA"
         description="Converse com o assistente inteligente da pousada."
-        headerAction={<StatusBadge label="Modelo: GPT-Hospitality-Pro" status="info" />}
+        headerAction={
+          <div className="flex items-center gap-3">
+            <StatusBadge label="Modelo: GPT-Hospitality-Pro" status="info" />
+            <button
+              onClick={handleClearChat}
+              className="text-xs text-red-400 hover:text-red-300 transition"
+            >
+              Limpar conversa
+            </button>
+          </div>
+        }
       >
         <div className="h-[70vh] flex flex-col">
-          {/* Área de mensagens */}
+          {/* Mensagens */}
           <div className="flex-1 overflow-y-auto space-y-4 p-4 bg-slate-950/5 dark:bg-slate-900/40 rounded-xl">
             {messages.map((msg, i) => (
               <div
@@ -101,7 +126,7 @@ export default function AIConsultantPage() {
             <div ref={chatEndRef} />
           </div>
 
-          {/* Área de input */}
+          {/* Input */}
           <form onSubmit={handleSend} className="mt-4 flex items-center gap-3">
             <textarea
               value={question}
