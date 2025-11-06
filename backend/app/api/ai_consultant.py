@@ -11,7 +11,8 @@ router = APIRouter()
 
 # ---------- Configuração do Gemini ----------
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-model = genai.GenerativeModel("gemini-1.5-flash")  # ✅ modelo correto
+model = genai.GenerativeModel("models/gemini-2.5-flash-latest")
+  # ✅ modelo correto
 
 # ---------- Funções utilitárias ----------
 def _count_docs_safe(collection_name: str) -> int:
