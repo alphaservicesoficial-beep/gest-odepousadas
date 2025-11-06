@@ -41,7 +41,6 @@ def get_room_number_from_room_id(room_id: str) -> str | None:
         return None
     snap = db.collection("rooms").document(room_id).get()
     if not snap.exists:
-        # tenta extrair os dígitos de algo como "RM-110"
         cleaned = digits_only(room_id)
         return cleaned or None
     data = snap.to_dict() or {}
@@ -58,10 +57,8 @@ def update_room_status(room_id: str, new_status: str, guest_name: str = None, no
             update_data["guest"] = None
             update_data["guestNotes"] = None
         else:
-            if guest_name:
-                update_data["guest"] = guest_name
-            if notes:
-                update_data["guestNotes"] = notes
+            update_data["guest"] = guest_name or ""
+            update_data["guestNotes"] = notes or ""
 
         room_ref.update(update_data)
         print(f"✅ Quarto {room_id} atualizado para {new_status}")
@@ -86,33 +83,37 @@ def get_companies():
 @router.post("/companies")
 def create_company(company: dict = Body(...)):
     try:
-        # 1️⃣ Salva a empresa
+        # 1️⃣ Cria a empresa
         company_ref = db.collection("companies").document()
         company_ref.set(company)
         company_id = company_ref.id
 
-        # 2️⃣ Se tiver um quarto, cria reserva
+        # 2️⃣ Se tiver um quarto vinculado
         if "roomId" in company and company["roomId"]:
             check_in = date.fromisoformat(company.get("checkIn"))
             check_out = date.fromisoformat(company.get("checkOut"))
             today = date.today()
 
+            # --- Determina o status correto ---
             if today < check_in:
                 status = "reservado"
-            elif check_in <= today <= check_out:
+            elif today == check_in:
+                status = "confirmado"  # ✅ No mesmo dia do check-in
+            elif check_in < today <= check_out:
                 status = "ocupado"
             else:
                 status = "disponível"
 
-            # resolve número do quarto
+            # --- Resolve número do quarto ---
             rn_payload = str(company.get("roomNumber") or "").strip()
             room_number = rn_payload or get_room_number_from_room_id(company.get("roomId"))
 
+            # --- Cria reserva ---
             reservation = {
                 "companyId": company_id,
                 "companyName": company.get("name"),
                 "roomId": company.get("roomId"),
-                "roomNumber": room_number,   # 👈 AGORA É SALVO!
+                "roomNumber": room_number,
                 "checkIn": company.get("checkIn"),
                 "checkOut": company.get("checkOut"),
                 "guests": company.get("guests", 1),
@@ -156,7 +157,17 @@ def update_company(company_id: str, data: Company):
         if data.roomId and data.checkIn:
             today = datetime.now().date()
             check_in = datetime.strptime(data.checkIn, "%Y-%m-%d").date()
-            status = "ocupado" if check_in <= today else "reservado"
+            check_out = datetime.strptime(data.checkOut, "%Y-%m-%d").date() if data.checkOut else check_in
+
+            # --- Lógica de status ---
+            if today < check_in:
+                status = "reservado"
+            elif today == check_in:
+                status = "confirmado"
+            elif check_in < today <= check_out:
+                status = "ocupado"
+            else:
+                status = "disponível"
 
             update_room_status(
                 data.roomId,
@@ -186,14 +197,14 @@ def delete_company(company_id: str):
         company_data = doc.to_dict()
         room_id = company_data.get("roomId")
 
-        # exclui a empresa
+        # Apaga a empresa
         doc_ref.delete()
 
-        # libera quarto
+        # Libera quarto
         if room_id:
             update_room_status(room_id, "disponível")
 
-        # remove reservas associadas
+        # Remove reservas associadas
         reservations_ref = db.collection("reservations")
         reservations = reservations_ref.where("companyId", "==", company_id).get()
         for r in reservations:
@@ -211,9 +222,7 @@ def delete_company(company_id: str):
 # ==========================================================
 @router.get("/available-rooms")
 def get_available_rooms(current_room_id: str | None = None):
-    """
-    Retorna quartos disponíveis. Inclui o quarto atual mesmo se ocupado.
-    """
+    """Retorna quartos disponíveis (inclui o quarto atual mesmo se ocupado)."""
     try:
         rooms_ref = db.collection("rooms").where("status", "==", "disponível").get()
         rooms = [doc.to_dict() | {"id": doc.id} for doc in rooms_ref]
@@ -238,7 +247,7 @@ def get_available_rooms(current_room_id: str | None = None):
 def generate_new_reservation(company_id: str, data: dict = Body(...)):
     """
     Gera uma nova reserva para uma empresa existente sem apagar a anterior.
-    Atualiza o quarto antigo para disponível e marca o novo como reservado.
+    Atualiza o quarto antigo para disponível e marca o novo como reservado/confirmado/ocupado conforme a data.
     """
     try:
         doc_ref = db.collection("companies").document(company_id)
@@ -249,24 +258,27 @@ def generate_new_reservation(company_id: str, data: dict = Body(...)):
         old_company = doc.to_dict()
         old_room_id = old_company.get("roomId")
 
-        # --- libera quarto antigo se foi trocado
+        # Libera quarto antigo se foi trocado
         if old_room_id and old_room_id != data.get("roomId"):
             update_room_status(old_room_id, "disponível")
 
-        # --- gera nova reserva
+        # --- Determina status corretamente ---
         check_in = date.fromisoformat(data.get("checkIn"))
         check_out = date.fromisoformat(data.get("checkOut"))
         today = date.today()
 
         if today < check_in:
             status = "reservado"
-        elif check_in <= today <= check_out:
+        elif today == check_in:
+            status = "confirmado"
+        elif check_in < today <= check_out:
             status = "ocupado"
         else:
             status = "disponível"
 
         room_number = str(data.get("roomNumber") or get_room_number_from_room_id(data.get("roomId")) or "")
 
+        # --- Cria nova reserva ---
         reservation = {
             "companyId": company_id,
             "companyName": data.get("name"),
@@ -283,7 +295,7 @@ def generate_new_reservation(company_id: str, data: dict = Body(...)):
 
         db.collection("reservations").add(reservation)
 
-        # --- atualiza dados principais da empresa (última reserva ativa)
+        # --- Atualiza empresa ---
         doc_ref.update({
             "roomId": data.get("roomId"),
             "roomNumber": room_number,

@@ -84,7 +84,9 @@ def create_guest(guest: dict):
 
         if today < check_in:
             status = "reservado"
-        elif check_in <= today <= check_out:
+        elif today == check_in:
+            status = "confirmado"  # ✅ No mesmo dia do check-in, ainda não entrou
+        elif check_in < today <= check_out:
             status = "ocupado"
         else:
             status = "disponível"
@@ -119,7 +121,6 @@ def create_guest(guest: dict):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-
 @router.put("/guests/{guest_id}")
 def update_guest(guest_id: str, data: Guest):
     try:
@@ -146,7 +147,9 @@ def update_guest(guest_id: str, data: Guest):
 
         if today < check_in:
             new_status = "reservado"
-        elif check_in <= today <= check_out:
+        elif today == check_in:
+            new_status = "confirmado"
+        elif check_in < today <= check_out:
             new_status = "ocupado"
         else:
             new_status = "disponível"
@@ -159,11 +162,11 @@ def update_guest(guest_id: str, data: Guest):
             notes=data.notes
         )
 
-        # 🔹 Buscar número do quarto atual
+        # Buscar número do quarto atual
         room_doc = db.collection("rooms").document(data.roomId).get()
         room_number = room_doc.to_dict().get("identifier") if room_doc.exists else None
 
-        # 🔹 Atualiza também a reserva mais recente (última criada)
+        # Atualiza a reserva mais recente
         reservations_ref = db.collection("reservations")\
             .where("guestId", "==", guest_id)\
             .order_by("__name__", direction=firestore.Query.DESCENDING)\
@@ -174,7 +177,7 @@ def update_guest(guest_id: str, data: Guest):
             db.collection("reservations").document(res.id).update({
                 "guestName": data.fullName,
                 "roomId": data.roomId,
-                "roomNumber": room_number,  # 👈 ATUALIZA AGORA!
+                "roomNumber": room_number,
                 "notes": data.notes,
                 "checkIn": data.checkIn,
                 "checkOut": data.checkOut,
@@ -198,10 +201,10 @@ def delete_guest(guest_id: str):
         if not doc.exists:
             raise HTTPException(status_code=404, detail="Hóspede não encontrado.")
 
-        # 🔹 Apaga o hóspede
+        # Apaga o hóspede
         guest_ref.delete()
 
-        # 🔹 Busca e remove todas as reservas associadas a esse hóspede
+        # Remove reservas associadas
         reservations = db.collection("reservations").where("guestId", "==", guest_id).get()
         for res in reservations:
             db.collection("reservations").document(res.id).delete()
@@ -237,12 +240,14 @@ def create_new_reservation_from_guest(guest_id: str, data: Guest):
 
         if today < check_in:
             status = "reservado"
-        elif check_in <= today <= check_out:
+        elif today == check_in:
+            status = "confirmado"
+        elif check_in < today <= check_out:
             status = "ocupado"
         else:
             status = "disponível"
 
-        # 4️⃣ Criar NOVA RESERVA (não altera a antiga)
+        # 4️⃣ Criar NOVA RESERVA
         new_reservation = {
             "guestId": guest_id,
             "guestName": data.fullName,
@@ -257,7 +262,7 @@ def create_new_reservation_from_guest(guest_id: str, data: Guest):
         }
         db.collection("reservations").add(new_reservation)
 
-        # 5️⃣ Atualizar hóspede com dados atuais, sem mexer nas reservas antigas
+        # 5️⃣ Atualizar hóspede com dados atuais
         guest_ref.update({
             "fullName": data.fullName,
             "cpf": data.cpf,

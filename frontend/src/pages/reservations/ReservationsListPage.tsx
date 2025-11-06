@@ -5,6 +5,22 @@ import StatusBadge from "../../components/ui/StatusBadge";
 
 const baseUrl = "https://pousada-backend-iccs.onrender.com/api";
 
+
+
+function formatCurrency(value: string | number): string {
+  if (value === null || value === undefined || value === "") return "R$ 0,00";
+
+  const num = typeof value === "string" ? parseFloat(value.replace(",", ".")) : value;
+
+  if (isNaN(num)) return "R$ 0,00";
+
+  return num.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
+
 type Reservation = {
   id: string;
   guestOrCompany: string;
@@ -364,7 +380,8 @@ function ReservationsListPage() {
             />
           </td>
 
-          <td className="px-4 py-3">{r.total}</td>
+          <td className="px-4 py-3">{formatCurrency(r.total)}</td>
+
 
           <td className="px-4 py-3 text-right">
             <button className="btn-primary btn-sm" onClick={() => openModal(r.id)}>
@@ -452,7 +469,8 @@ function ReservationsListPage() {
               }
             />
           </p>
-          <p>Total: {r.total}</p>
+          <p>Total: {formatCurrency(r.total)}</p>
+
         </div>
       </div>
     ))
