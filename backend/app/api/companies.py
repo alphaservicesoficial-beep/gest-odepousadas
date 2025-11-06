@@ -1,54 +1,35 @@
-from fastapi import APIRouter, HTTPException, Body
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from app.core.firebase import db
-from google.cloud import firestore
-from datetime import datetime, date
-import re
+from datetime import date
+from firebase_admin import firestore
 
 router = APIRouter()
+db = firestore.client()
 
-
-# ==========================================================
-# 🔹 MODELOS DE DADOS
-# ==========================================================
+# =====================================================
+# 🔹 MODELO Pydantic
+# =====================================================
 class Company(BaseModel):
     name: str
     cnpj: str
     mainContact: str
     email: str
     phone: str
-    checkIn: str | None = None
-    checkOut: str | None = None
-    guests: int | None = None
-    roomId: str | None = None
-    roomNumber: str | None = None
-    amenities: list[str] | None = None
-    value: str | None = None
-    notes: str | None = None
+    roomId: str
+    checkIn: str
+    checkOut: str
+    guests: int | None = 1
+    value: str | None = ""
+    notes: str | None = ""
 
 
-# ==========================================================
-# 🔹 FUNÇÕES AUXILIARES
-# ==========================================================
-def digits_only(text: str) -> str:
-    """Extrai apenas números (ex: RM-105 → 105)."""
-    return "".join(re.findall(r"\d+", str(text or "")))
-
-
-def get_room_number_from_room_id(room_id: str) -> str | None:
-    """Busca o número do quarto no Firestore."""
-    if not room_id:
-        return None
-    snap = db.collection("rooms").document(room_id).get()
-    if not snap.exists:
-        cleaned = digits_only(room_id)
-        return cleaned or None
-    data = snap.to_dict() or {}
-    return str(data.get("number") or digits_only(room_id) or "").strip() or None
-
-
-def update_room_status(room_id: str, new_status: str, guest_name: str = None, notes: str = None):
-    """Atualiza status e informações do quarto."""
+# =====================================================
+# 🔹 FUNÇÃO AUXILIAR — Atualiza status e informações do quarto
+# =====================================================
+def update_room_status(room_id: str, new_status: str, company_name: str = None, notes: str = None):
+    """
+    Atualiza o status do quarto e os dados da empresa no Firestore.
+    """
     try:
         room_ref = db.collection("rooms").document(room_id)
         update_data = {"status": new_status}
@@ -57,215 +38,52 @@ def update_room_status(room_id: str, new_status: str, guest_name: str = None, no
             update_data["guest"] = None
             update_data["guestNotes"] = None
         else:
-            update_data["guest"] = guest_name or ""
+            update_data["guest"] = company_name or ""
             update_data["guestNotes"] = notes or ""
 
         room_ref.update(update_data)
-        print(f"✅ Quarto {room_id} atualizado para {new_status}")
+        print(f"✅ Quarto {room_id} → {new_status} | Empresa: {company_name or '—'} | Notas: {notes or '—'}")
 
     except Exception as e:
-        print(f"⚠️ Erro ao atualizar quarto {room_id}: {e}")
+        print(f"⚠️ Erro ao atualizar status do quarto {room_id}: {e}")
 
 
-# ==========================================================
-# 🔹 LISTAR TODAS AS EMPRESAS
-# ==========================================================
+# =====================================================
+# 🔹 LISTAR EMPRESAS
+# =====================================================
 @router.get("/companies")
 def get_companies():
-    companies_ref = db.collection("companies").get()
-    companies = [doc.to_dict() | {"id": doc.id} for doc in companies_ref]
-    return companies
-
-
-# ==========================================================
-# 🔹 CRIAR NOVA EMPRESA + RESERVA
-# ==========================================================
-@router.post("/companies")
-def create_company(company: dict = Body(...)):
+    """Lista todas as empresas"""
     try:
-        # 1️⃣ Cria a empresa
+        companies = []
+        for doc in db.collection("companies").stream():
+            data = doc.to_dict()
+            data["id"] = doc.id
+            companies.append(data)
+        return companies
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# =====================================================
+# 🔹 CRIAR EMPRESA + RESERVA
+# =====================================================
+@router.post("/companies")
+def create_company(company: dict):
+    try:
+        # Busca o número do quarto antes de salvar
+        room_doc = db.collection("rooms").document(company["roomId"]).get()
+        room_number = room_doc.to_dict().get("identifier") if room_doc.exists else None
+        company["roomNumber"] = room_number
+
         company_ref = db.collection("companies").document()
         company_ref.set(company)
         company_id = company_ref.id
 
-        # 2️⃣ Se tiver um quarto vinculado
-        if "roomId" in company and company["roomId"]:
-            check_in = date.fromisoformat(company.get("checkIn"))
-            check_out = date.fromisoformat(company.get("checkOut"))
-            today = date.today()
-
-            # --- Determina o status correto ---
-            if today < check_in:
-                status = "reservado"
-            elif today == check_in:
-                status = "confirmado"  # ✅ No mesmo dia do check-in
-            elif check_in < today <= check_out:
-                status = "ocupado"
-            else:
-                status = "disponível"
-
-            # --- Resolve número do quarto ---
-            rn_payload = str(company.get("roomNumber") or "").strip()
-            room_number = rn_payload or get_room_number_from_room_id(company.get("roomId"))
-
-            # --- Cria reserva ---
-            reservation = {
-                "companyId": company_id,
-                "companyName": company.get("name"),
-                "roomId": company.get("roomId"),
-                "roomNumber": room_number,
-                "checkIn": company.get("checkIn"),
-                "checkOut": company.get("checkOut"),
-                "guests": company.get("guests", 1),
-                "value": company.get("value"),
-                "status": status,
-                "notes": company.get("notes", ""),
-                "createdAt": firestore.SERVER_TIMESTAMP,
-            }
-
-            db.collection("reservations").add(reservation)
-
-            update_room_status(
-                company["roomId"],
-                status,
-                guest_name=company.get("name"),
-                notes=company.get("notes")
-            )
-
-        return {
-            "message": f"Empresa criada com sucesso e quarto marcado como {status}.",
-            "companyId": company_id
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# ==========================================================
-# 🔹 ATUALIZAR EMPRESA EXISTENTE
-# ==========================================================
-@router.put("/companies/{company_id}")
-def update_company(company_id: str, data: Company):
-    try:
-        doc_ref = db.collection("companies").document(company_id)
-        doc = doc_ref.get()
-        if not doc.exists:
-            raise HTTPException(status_code=404, detail="Empresa não encontrada.")
-
-        doc_ref.update({k: v for k, v in data.dict().items() if v is not None})
-
-        if data.roomId and data.checkIn:
-            today = datetime.now().date()
-            check_in = datetime.strptime(data.checkIn, "%Y-%m-%d").date()
-            check_out = datetime.strptime(data.checkOut, "%Y-%m-%d").date() if data.checkOut else check_in
-
-            # --- Lógica de status ---
-            if today < check_in:
-                status = "reservado"
-            elif today == check_in:
-                status = "confirmado"
-            elif check_in < today <= check_out:
-                status = "ocupado"
-            else:
-                status = "disponível"
-
-            update_room_status(
-                data.roomId,
-                status,
-                guest_name=data.name,
-                notes=data.notes
-            )
-
-        return {"message": f"Empresa {company_id} atualizada com sucesso!"}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# ==========================================================
-# 🔹 DELETAR EMPRESA + LIBERAR QUARTO + EXCLUIR RESERVA
-# ==========================================================
-@router.delete("/companies/{company_id}")
-def delete_company(company_id: str):
-    try:
-        doc_ref = db.collection("companies").document(company_id)
-        doc = doc_ref.get()
-
-        if not doc.exists:
-            raise HTTPException(status_code=404, detail="Empresa não encontrada.")
-
-        company_data = doc.to_dict()
-        room_id = company_data.get("roomId")
-
-        # Apaga a empresa
-        doc_ref.delete()
-
-        # Libera quarto
-        if room_id:
-            update_room_status(room_id, "disponível")
-
-        # Remove reservas associadas
-        reservations_ref = db.collection("reservations")
-        reservations = reservations_ref.where("companyId", "==", company_id).get()
-        for r in reservations:
-            r.reference.delete()
-            print(f"🗑️ Reserva {r.id} removida da empresa {company_id}")
-
-        return {"message": "Empresa e reservas excluídas, quarto liberado!"}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# ==========================================================
-# 🔹 LISTAR QUARTOS DISPONÍVEIS
-# ==========================================================
-@router.get("/available-rooms")
-def get_available_rooms(current_room_id: str | None = None):
-    """Retorna quartos disponíveis (inclui o quarto atual mesmo se ocupado)."""
-    try:
-        rooms_ref = db.collection("rooms").where("status", "==", "disponível").get()
-        rooms = [doc.to_dict() | {"id": doc.id} for doc in rooms_ref]
-
-        if current_room_id:
-            current_room_ref = db.collection("rooms").document(current_room_id).get()
-            if current_room_ref.exists:
-                current_room_data = current_room_ref.to_dict() | {"id": current_room_ref.id}
-                if not any(r["id"] == current_room_id for r in rooms):
-                    rooms.append(current_room_data)
-
-        return rooms
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao buscar quartos: {e}")
-
-
-# ==========================================================
-# 🔹 GERAR NOVA RESERVA PARA UMA EMPRESA EXISTENTE
-# ==========================================================
-@router.post("/companies/{company_id}/new_reservation")
-def generate_new_reservation(company_id: str, data: dict = Body(...)):
-    """
-    Gera uma nova reserva para uma empresa existente sem apagar a anterior.
-    Atualiza o quarto antigo para disponível e marca o novo como reservado/confirmado/ocupado conforme a data.
-    """
-    try:
-        doc_ref = db.collection("companies").document(company_id)
-        doc = doc_ref.get()
-        if not doc.exists:
-            raise HTTPException(status_code=404, detail="Empresa não encontrada.")
-
-        old_company = doc.to_dict()
-        old_room_id = old_company.get("roomId")
-
-        # Libera quarto antigo se foi trocado
-        if old_room_id and old_room_id != data.get("roomId"):
-            update_room_status(old_room_id, "disponível")
-
-        # --- Determina status corretamente ---
-        check_in = date.fromisoformat(data.get("checkIn"))
-        check_out = date.fromisoformat(data.get("checkOut"))
+        # --- Determina status conforme as datas ---
         today = date.today()
+        check_in = date.fromisoformat(company.get("checkIn"))
+        check_out = date.fromisoformat(company.get("checkOut"))
 
         if today < check_in:
             status = "reservado"
@@ -276,44 +94,205 @@ def generate_new_reservation(company_id: str, data: dict = Body(...)):
         else:
             status = "disponível"
 
-        room_number = str(data.get("roomNumber") or get_room_number_from_room_id(data.get("roomId")) or "")
-
-        # --- Cria nova reserva ---
+        # --- Cria reserva ---
         reservation = {
             "companyId": company_id,
-            "companyName": data.get("name"),
-            "roomId": data.get("roomId"),
+            "companyName": company.get("name"),
+            "roomId": company.get("roomId"),
             "roomNumber": room_number,
-            "checkIn": data.get("checkIn"),
-            "checkOut": data.get("checkOut"),
-            "guests": data.get("guests", 1),
-            "value": data.get("value"),
+            "checkIn": company.get("checkIn"),
+            "checkOut": company.get("checkOut"),
+            "guests": company.get("guests", 1),
+            "value": company.get("value"),
             "status": status,
-            "notes": data.get("notes", ""),
-            "createdAt": firestore.SERVER_TIMESTAMP,
+            "notes": company.get("notes", "")
         }
 
         db.collection("reservations").add(reservation)
 
-        # --- Atualiza empresa ---
-        doc_ref.update({
-            "roomId": data.get("roomId"),
-            "roomNumber": room_number,
-            "checkIn": data.get("checkIn"),
-            "checkOut": data.get("checkOut"),
-            "guests": data.get("guests"),
-            "value": data.get("value"),
-            "notes": data.get("notes")
-        })
-
+        # --- Atualiza status do quarto ---
         update_room_status(
-            data["roomId"],
+            company["roomId"],
             status,
-            guest_name=data.get("name"),
-            notes=data.get("notes")
+            company_name=company.get("name"),
+            notes=company.get("notes")
         )
 
-        return {"message": "Nova reserva criada para a empresa.", "status": status}
+        return {"message": f"Empresa criada com sucesso! Quarto marcado como {status}."}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao criar nova reserva: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# =====================================================
+# 🔹 ATUALIZAR EMPRESA + RESERVA MAIS RECENTE
+# =====================================================
+@router.put("/companies/{company_id}")
+def update_company(company_id: str, data: Company):
+    try:
+        ref = db.collection("companies").document(company_id)
+        old_doc = ref.get()
+        if not old_doc.exists:
+            raise HTTPException(status_code=404, detail="Empresa não encontrada")
+
+        old_data = old_doc.to_dict()
+        old_room_id = old_data.get("roomId")
+
+        # Atualiza dados da empresa
+        ref.update(data.dict())
+        print(f"✏️ Empresa {company_id} atualizada → {data.name}")
+
+        # Se trocou de quarto, libera o antigo
+        if old_room_id and old_room_id != data.roomId:
+            update_room_status(old_room_id, "disponível")
+
+        # Define status conforme as datas
+        today = date.today()
+        check_in = date.fromisoformat(data.checkIn)
+        check_out = date.fromisoformat(data.checkOut)
+
+        if today < check_in:
+            new_status = "reservado"
+        elif today == check_in:
+            new_status = "confirmado"
+        elif check_in < today <= check_out:
+            new_status = "ocupado"
+        else:
+            new_status = "disponível"
+
+        # Atualiza o status do novo quarto
+        update_room_status(
+            data.roomId,
+            new_status,
+            company_name=data.name,
+            notes=data.notes
+        )
+
+        # Buscar número do quarto atual
+        room_doc = db.collection("rooms").document(data.roomId).get()
+        room_number = room_doc.to_dict().get("identifier") if room_doc.exists else None
+
+        # Atualiza a reserva mais recente
+        reservations_ref = db.collection("reservations")\
+            .where("companyId", "==", company_id)\
+            .order_by("__name__", direction=firestore.Query.DESCENDING)\
+            .limit(1)\
+            .get()
+
+        for res in reservations_ref:
+            db.collection("reservations").document(res.id).update({
+                "companyName": data.name,
+                "roomId": data.roomId,
+                "roomNumber": room_number,
+                "notes": data.notes,
+                "checkIn": data.checkIn,
+                "checkOut": data.checkOut,
+                "status": new_status,
+                "value": data.value,
+            })
+            print(f"✅ Atualizada reserva mais recente ({res.id}) com quarto {room_number}")
+
+        return {"message": "Empresa e reserva atualizadas com sucesso"}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# =====================================================
+# 🔹 DELETAR EMPRESA + RESERVAS
+# =====================================================
+@router.delete("/companies/{company_id}")
+def delete_company(company_id: str):
+    try:
+        company_ref = db.collection("companies").document(company_id)
+        doc = company_ref.get()
+
+        if not doc.exists:
+            raise HTTPException(status_code=404, detail="Empresa não encontrada.")
+
+        company_ref.delete()
+
+        # Remove reservas associadas
+        reservations = db.collection("reservations").where("companyId", "==", company_id).get()
+        for res in reservations:
+            db.collection("reservations").document(res.id).delete()
+
+        return {"message": "Empresa e suas reservas foram excluídas com sucesso."}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# =====================================================
+# 🔹 NOVA RESERVA (CONGELA ANTERIOR)
+# =====================================================
+@router.post("/companies/{company_id}/new_reservation")
+def create_new_reservation_from_company(company_id: str, data: Company):
+    """
+    Cria uma nova reserva a partir de uma empresa existente.
+    Mantém o histórico anterior e atualiza os dados da empresa.
+    """
+    try:
+        # Buscar empresa existente
+        company_ref = db.collection("companies").document(company_id)
+        company_doc = company_ref.get()
+
+        if not company_doc.exists:
+            raise HTTPException(status_code=404, detail="Empresa não encontrada.")
+
+        # Buscar número do quarto
+        room_doc = db.collection("rooms").document(data.roomId).get()
+        room_number = room_doc.to_dict().get("identifier") if room_doc.exists else None
+
+        # Determinar status
+        today = date.today()
+        check_in = date.fromisoformat(data.checkIn)
+        check_out = date.fromisoformat(data.checkOut)
+
+        if today < check_in:
+            status = "reservado"
+        elif today == check_in:
+            status = "confirmado"
+        elif check_in < today <= check_out:
+            status = "ocupado"
+        else:
+            status = "disponível"
+
+        # Criar nova reserva
+        new_reservation = {
+            "companyId": company_id,
+            "companyName": data.name,
+            "roomId": data.roomId,
+            "roomNumber": room_number,
+            "checkIn": data.checkIn,
+            "checkOut": data.checkOut,
+            "guests": data.guests or 1,
+            "value": data.value or "",
+            "status": status,
+            "notes": data.notes or "",
+        }
+        db.collection("reservations").add(new_reservation)
+
+        # Atualizar empresa com dados atuais
+        company_ref.update({
+            "name": data.name,
+            "cnpj": data.cnpj,
+            "mainContact": data.mainContact,
+            "email": data.email,
+            "phone": data.phone,
+            "roomId": data.roomId,
+            "checkIn": data.checkIn,
+            "checkOut": data.checkOut,
+            "guests": data.guests,
+            "value": data.value,
+            "notes": data.notes,
+            "roomNumber": room_number
+        })
+
+        # Atualizar status do quarto
+        update_room_status(data.roomId, status, company_name=data.name, notes=data.notes)
+
+        return {"message": "Nova reserva criada e empresa atualizada com sucesso (reservas antigas preservadas)."}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

@@ -803,14 +803,12 @@ async function handleGenerateNewReservation() {
                 >
                   <Trash2 size={16} /> Excluir
                 </button>
-                <button
-                  className="btn-secondary btn-sm gap-1"
-                  onClick={() => {
-                    handleEdit(selectedCompany);
-                  }}
-                >
-                  <Edit size={16} /> Editar
-                </button>
+                 <button
+                className="btn-primary flex items-center gap-1"
+                onClick={() => handleEdit(selectedCompany)}
+              >
+                <Edit size={14} /> Editar
+              </button>
               </div>
             </div>
           </div>
