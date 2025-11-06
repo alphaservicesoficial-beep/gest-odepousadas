@@ -159,21 +159,24 @@ def update_guest(guest_id: str, data: Guest):
             notes=data.notes
         )
 
-        # 🔹 Atualiza também a reserva correspondente
-       # 🔹 Atualiza apenas a reserva mais recente (a última criada)
-reservations_ref = db.collection("reservations").where("guestId", "==", guest_id).order_by("__name__", direction=firestore.Query.DESCENDING).limit(1).get()
+        # 🔹 Atualiza apenas a reserva mais recente (a última criada)
+        reservations_ref = db.collection("reservations")\
+            .where("guestId", "==", guest_id)\
+            .order_by("__name__", direction=firestore.Query.DESCENDING)\
+            .limit(1)\
+            .get()
 
-for res in reservations_ref:
-    db.collection("reservations").document(res.id).update({
-        "guestName": data.fullName,
-        "roomId": data.roomId,
-        "notes": data.notes,
-        "checkIn": data.checkIn,
-        "checkOut": data.checkOut,
-        "status": new_status,
-        "value": data.value,
-    })
-    print(f"✅ Atualizada apenas reserva mais recente: {res.id}")
+        for res in reservations_ref:
+            db.collection("reservations").document(res.id).update({
+                "guestName": data.fullName,
+                "roomId": data.roomId,
+                "notes": data.notes,
+                "checkIn": data.checkIn,
+                "checkOut": data.checkOut,
+                "status": new_status,
+                "value": data.value,
+            })
+            print(f"✅ Atualizada apenas reserva mais recente: {res.id}")
 
         return {"message": "Hóspede e reserva atualizados com sucesso"}
 

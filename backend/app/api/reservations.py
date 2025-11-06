@@ -119,20 +119,22 @@ def confirm_checkin(reservation_id: str):
 
         # Garante roomNumber ao confirmar check-in (se ainda não existir)
         room_number = data.get("roomNumber") or get_room_number_from_room_id(room_id)
-        updates = {"checkInStatus": "concluido"}
+        updates = {
+            "checkInStatus": "concluido",
+            "status": "confirmado"   # 🔹 força status a permanecer confirmado
+        }
         if room_number and not data.get("roomNumber"):
             updates["roomNumber"] = room_number
 
         doc_ref.update(updates)
 
-        # Atualiza o quarto → agora fica OCUPADO
+        # Atualiza apenas o QUARTO → ocupado
         if room_id:
             update_room_status(room_id, "ocupado")
 
-        return {"message": "Check-in concluído e quarto marcado como ocupado."}
+        return {"message": "Check-in concluído, reserva confirmada e quarto marcado como ocupado."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 # ------------------------------------------------------------
 # ✅ CONFIRMAR CHECK-OUT (registra a data real de saída)
