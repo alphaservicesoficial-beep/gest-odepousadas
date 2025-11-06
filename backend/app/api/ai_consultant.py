@@ -179,3 +179,7 @@ def ai_consult(payload: dict = Body(...)):
         })
 
         return {"answer": resposta}
+
+    except Exception as e:
+        print("❌ ERRO NO CONSULTOR IA:", traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
