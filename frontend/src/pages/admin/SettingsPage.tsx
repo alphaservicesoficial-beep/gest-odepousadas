@@ -92,11 +92,42 @@ function isValidCNPJ(cnpj: string) {
   return cleaned.length === 14;
 }
 
+// --- Máscara de telefone ---
+const maskPhone = (value: string): string => {
+  const cleaned = value.replace(/\D/g, "");
+
+  // Formato para números curtos ou fixos (10 dígitos)
+  if (cleaned.length <= 10) {
+    return cleaned
+      .replace(/^(\d{2})(\d)/, "($1) $2")
+      .replace(/(\d{4})(\d)/, "$1-$2")
+      .substring(0, 14);
+  }
+
+  // Formato para celulares (11 dígitos)
+  return cleaned
+    .replace(/^(\d{2})(\d)/, "($1) $2")
+    .replace(/(\d{5})(\d)/, "$1-$2")
+    .substring(0, 15);
+};
+
+// --- Validação básica ---
+function isValidPhone(phone: string) {
+  const cleaned = phone.replace(/[^\d]/g, "");
+  return cleaned.length >= 10 && cleaned.length <= 11;
+}
+
+
 async function handleSaveSettings() {
   if (!isValidCNPJ(settings.cnpj)) {
     alert("CNPJ inválido. Verifique e tente novamente.");
     return;
   }
+
+  if (!isValidPhone(settings.phone)) {
+  alert("Telefone inválido. Verifique e tente novamente.");
+  return;
+}
 
   try {
     setSaving(true);
@@ -112,6 +143,7 @@ async function handleSaveSettings() {
   } finally {
     setSaving(false);
   }
+  
 }
 
 
@@ -204,12 +236,14 @@ async function handleSaveSettings() {
 
 
 
-                <input
-                  placeholder="Telefone"
-                  value={settings.phone}
-                  onChange={(e) => setSettings({ ...settings, phone: e.target.value })}
-                  className="surface-input"
-                />
+               <input
+  placeholder="Telefone"
+  name="phone"
+  value={maskPhone(settings.phone || "")}
+  onChange={(e) => setSettings({ ...settings, phone: maskPhone(e.target.value) })}
+  className="surface-input"
+/>
+
                 <input
                   placeholder="Endereço completo"
                   value={settings.address}

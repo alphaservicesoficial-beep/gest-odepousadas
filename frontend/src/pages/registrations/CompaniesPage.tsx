@@ -181,25 +181,32 @@ setCompanies(data);
     }, []);
 
   // Carregar quartos disponíveis ao abrir a página
-  useEffect(() => {
-    async function loadAvailableRooms() {
-      try {
-        const currentRoomId = isEditing && form.roomId ? form.roomId : "";
-        const response = await fetch(
-          `${baseUrl}/available-rooms${currentRoomId ? `?current_room_id=${currentRoomId}` : ""}`
-        );
-        if (!response.ok) throw new Error("Erro ao buscar quartos disponíveis");
-        const data = await response.json();
-        setAvailableRooms(data);
-      } catch (error) {
-        console.error("Erro ao buscar quartos disponíveis:", error);
-        setAvailableRooms([]);
-      }
+useEffect(() => {
+  async function loadAvailableRooms() {
+    try {
+      const currentRoomId = isEditing && form.roomId ? form.roomId : "";
+
+      // Busca todos os quartos do backend
+      const response = await fetch(`${baseUrl}/rooms`);
+      if (!response.ok) throw new Error("Erro ao buscar quartos disponíveis");
+
+      const allRooms = await response.json();
+
+      // Filtra apenas os disponíveis ou o atual (quando editando)
+      const filteredRooms = allRooms.filter((room: any) =>
+        room.status === "disponível" ||
+        (isEditing && room.id === currentRoomId)
+      );
+
+      setAvailableRooms(filteredRooms);
+    } catch (error) {
+      console.error("Erro ao buscar quartos disponíveis:", error);
+      setAvailableRooms([]);
     }
-  
-    loadAvailableRooms();
-  }, [isEditing, form.roomId]);
-  
+  }
+
+  loadAvailableRooms();
+}, [isEditing, form.roomId]);
 
   
   
@@ -230,7 +237,7 @@ setCompanies(data);
 }
 
   
-  async function handleSave(e: FormEvent) {
+async function handleSave(e: FormEvent) {
   e.preventDefault();
 
   const dataToSave = {
@@ -241,7 +248,7 @@ setCompanies(data);
 
   try {
     // ====================================================
-    // 1️⃣ SALVAR / ATUALIZAR EMPRESA NA API LOCAL
+    // 1️⃣ SALVAR / ATUALIZAR EMPRESA
     // ====================================================
     if (isEditing && dataToSave.id) {
       await fetch(`${baseUrl}/companies/${dataToSave.id}`, {
@@ -255,8 +262,6 @@ setCompanies(data);
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataToSave),
       });
-
-      // ✅ Garante que o ID retornado da empresa criada é salvo
       const savedCompany = await response.json();
       if (savedCompany?.id) {
         dataToSave.id = savedCompany.id;
@@ -266,72 +271,41 @@ setCompanies(data);
     // ====================================================
     // 2️⃣ ATUALIZAR STATUS DOS QUARTOS (LIBERAR / RESERVAR)
     // ====================================================
-    if (isEditing) {
-      const oldCompany = companies.find((c) => c.id === dataToSave.id);
-      const oldRoomId = oldCompany?.roomId;
+    const oldCompany = companies.find((c) => c.id === dataToSave.id);
+    const oldRoomId = oldCompany?.roomId;
+    const newRoomId = dataToSave.roomId;
 
-      // Se o quarto foi trocado, libera o anterior
-      if (oldRoomId && oldRoomId !== dataToSave.roomId) {
-        await updateRoomStatus(oldRoomId, "disponível");
-        console.log(`🟢 Quarto ${oldRoomId} liberado (empresa editada)`);
-      }
+    // 🟢 Libera o quarto antigo (se trocou)
+    if (isEditing && oldRoomId && oldRoomId !== newRoomId) {
+      await fetch(`${baseUrl}/rooms/${oldRoomId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "disponível" }),
+      });
+      console.log(`🟢 Quarto ${oldRoomId} liberado`);
     }
 
-    // Marca o novo quarto como reservado
-    if (dataToSave.roomId) {
-      await updateRoomStatus(dataToSave.roomId, "reservado");
-      console.log(`✅ Quarto ${dataToSave.roomId} marcado como reservado`);
+    // 🔵 Reserva o novo quarto (ou mantém o atual se igual)
+    if (newRoomId) {
+      await fetch(`${baseUrl}/rooms/${newRoomId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "reservado" }),
+      });
+      console.log(`🔵 Quarto ${newRoomId} reservado`);
     }
 
     // ====================================================
-    // 3️⃣ CRIAR OU ATUALIZAR RESERVA NO FIRESTORE
+    // 3️⃣ RECARREGAR LISTA E RESETAR
     // ====================================================
-    if (dataToSave.roomId && dataToSave.id) {
-      const reservationsRef = collection(db, "reservations");
-
-      // Busca reservas existentes para esta empresa
-      const existingReservationsSnap = await getDocs(reservationsRef);
-      const existingReservation = existingReservationsSnap.docs.find(
-        (doc) => doc.data().companyId === dataToSave.id
-      );
-
-      const reservationData = {
-        companyId: dataToSave.id,
-        companyName: dataToSave.name,
-        roomId: dataToSave.roomId,
-        checkIn: dataToSave.checkIn || "",
-        checkOut: dataToSave.checkOut || "",
-        guests: dataToSave.guests || 1,
-        notes: dataToSave.notes || "",
-        value: dataToSave.value || "",
-        status: "reservado",
-        createdAt: new Date().toISOString(),
-      };
-
-      if (existingReservation) {
-        // 🔁 Atualiza a reserva existente
-        const reservationDoc = doc(db, "reservations", existingReservation.id);
-        await updateDoc(reservationDoc, reservationData);
-        console.log(`🔁 Reserva atualizada para empresa: ${dataToSave.name}`);
-      } else {
-        // 🆕 Cria nova reserva
-        await addDoc(reservationsRef, reservationData);
-        console.log(`🆕 Nova reserva criada para empresa: ${dataToSave.name}`);
-      }
-    }
-
+    await loadCompanies();
+    setIsModalOpen(false);
+    setIsEditing(false);
+    resetForm();
   } catch (error) {
-    console.error("❌ Erro ao salvar empresa e/ou atualizar quarto:", error);
-    alert("Houve um erro ao salvar os dados. Verifique o console.");
+    console.error("❌ Erro ao salvar empresa e atualizar quarto:", error);
+    alert("Erro ao salvar empresa. Verifique o console.");
   }
-
-  // ====================================================
-  // 4️⃣ RECARREGAR LISTA E RESETAR FORMULÁRIO
-  // ====================================================
-  await loadCompanies();
-  setIsModalOpen(false);
-  setIsEditing(false);
-  resetForm();
 }
 
 
@@ -645,7 +619,7 @@ async function handleGenerateNewReservation() {
       });
     }}
   >
-    <option value="">Selecione um quarto disponível</option>
+    <option value="">Selecione um quarto</option>
 
     {/* ✅ Quartos disponíveis */}
     {availableRooms.map((r) => (
