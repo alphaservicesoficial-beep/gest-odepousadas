@@ -200,3 +200,65 @@ def delete_guest(guest_id: str):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/guests/{guest_id}/new_reservation")
+def create_new_reservation_from_guest(guest_id: str, data: Guest):
+    """
+    Cria uma nova reserva a partir de um hóspede existente, sem criar um novo hóspede.
+    Mantém o histórico de reservas anteriores.
+    """
+    try:
+        # 1️⃣ Buscar hóspede existente
+        guest_ref = db.collection("guests").document(guest_id)
+        guest_doc = guest_ref.get()
+
+        if not guest_doc.exists:
+            raise HTTPException(status_code=404, detail="Hóspede não encontrado.")
+
+        guest_data = guest_doc.to_dict()
+
+        # 2️⃣ Buscar número do quarto
+        room_doc = db.collection("rooms").document(data.roomId).get()
+        room_number = room_doc.to_dict().get("identifier") if room_doc.exists else None
+
+        # 3️⃣ Determinar status conforme as datas
+        today = date.today()
+        check_in = date.fromisoformat(data.checkIn)
+        check_out = date.fromisoformat(data.checkOut)
+
+        if today < check_in:
+            status = "reservado"
+        elif check_in <= today <= check_out:
+            status = "ocupado"
+        else:
+            status = "disponível"
+
+        # 4️⃣ Criar nova reserva no Firestore
+        new_reservation = {
+            "guestId": guest_id,
+            "guestName": data.fullName,
+            "roomId": data.roomId,
+            "roomNumber": room_number,
+            "checkIn": data.checkIn,
+            "checkOut": data.checkOut,
+            "guests": data.guests or 1,
+            "value": data.value or "",
+            "status": status,
+            "notes": data.notes or "",
+        }
+
+        db.collection("reservations").add(new_reservation)
+
+        # 5️⃣ Atualizar status do quarto
+        update_room_status(
+            data.roomId,
+            status,
+            guest_name=data.fullName,
+            notes=data.notes,
+        )
+
+        return {"message": "Nova reserva criada com sucesso a partir do hóspede existente."}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
