@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import Card from "../components/ui/Card";
 import { KpiCard } from "../components/ui/KpiCard";
 import StatusBadge from "../components/ui/StatusBadge";
+import { getUser } from "../lib/auth"; // 👈 importa o mesmo helper usado no Topbar
 
 const baseUrl = "https://pousada-backend-iccs.onrender.com/api";
 
-// Tipagem dos dados vindos do backend
 interface DashboardData {
   summary: {
     occupancyRate: string;
@@ -29,7 +29,10 @@ function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 🔹 Busca os dados do backend FastAPI
+  // 👤 Usuário logado (mesmo que aparece na Topbar)
+  const user = getUser();
+  const userName = user?.name || "Usuário";
+
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
@@ -49,21 +52,19 @@ function DashboardPage() {
     fetchDashboardData();
   }, []);
 
-  if (loading) {
+  if (loading)
     return (
       <div className="flex h-[60vh] items-center justify-center text-muted">
         <span className="animate-pulse">Carregando dados do dashboard...</span>
       </div>
     );
-  }
 
-  if (error) {
+  if (error)
     return (
       <div className="flex h-[60vh] items-center justify-center text-red-600">
         {error}
       </div>
     );
-  }
 
   if (!dashboardData) return null;
 
@@ -73,7 +74,7 @@ function DashboardPage() {
     <div className="space-y-6">
       <section>
         <h1 className="text-2xl font-semibold text-emphasis">
-          Olá, Usuário Demo!
+          Olá, {userName}!
         </h1>
         <p className="text-sm text-muted">
           Aqui está o panorama de hoje para a sua propriedade.
@@ -110,10 +111,7 @@ function DashboardPage() {
 
       {/* Status e movimentos */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card
-          title="Status dos Quartos"
-          description="Resumo rápido do cenário atual"
-        >
+        <Card title="Status dos Quartos" description="Resumo rápido do cenário atual">
           <ul className="space-y-3">
             <li className="flex items-center justify-between">
               <span className="text-sm text-muted-strong">Disponíveis</span>
@@ -130,10 +128,7 @@ function DashboardPage() {
           </ul>
         </Card>
 
-        <Card
-          title="Movimentos de Hoje"
-          description="Entradas e saídas programadas"
-        >
+        <Card title="Movimentos de Hoje" description="Entradas e saídas programadas">
           <div className="space-y-4">
             <div>
               <h3 className="text-sm font-medium text-emphasis">Check-ins</h3>
