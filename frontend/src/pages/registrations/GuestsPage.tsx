@@ -258,42 +258,27 @@ async function handleSave(e: FormEvent) {
 
 
 async function handleGenerateNewReservation() {
-  try {
-    if (!form.id) {
-      alert("Hóspede não encontrado.");
-      return;
-    }
+  if (!form.id) {
+    alert("Hóspede não identificado.");
+    return;
+  }
 
-    // 🔹 Cria o corpo da nova reserva baseado no formulário atual
-    const newReservationData = {
-      fullName: form.fullName,
+  try {
+    const payload = {
+      ...form,
       cpf: form.cpf?.replace(/\D/g, ""),
       phone: form.phone?.replace(/\D/g, ""),
-      email: form.email,
-      roomId: form.roomId,
-      checkIn: form.checkIn,
-      checkOut: form.checkOut,
-      guests: form.guests,
-      value: form.value,
-      notes: form.notes,
     };
 
-    // 🔹 Faz a requisição para a rota específica que usa o hóspede existente
-    const response = await fetch(
-      `${baseUrl}/guests/${form.id}/new_reservation`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newReservationData),
-      }
-    );
+    const response = await fetch(`${baseUrl}/guests/${form.id}/new_reservation`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || "Erro ao criar nova reserva.");
-    }
+    if (!response.ok) throw new Error("Erro ao gerar nova reserva.");
 
-    alert("✅ Nova reserva criada com sucesso!");
+    alert("Nova reserva criada e hóspede atualizado!");
     await loadData();
     setIsModalOpen(false);
     setIsEditing(false);
@@ -303,6 +288,7 @@ async function handleGenerateNewReservation() {
     alert("Erro ao gerar nova reserva. Tente novamente.");
   }
 }
+
 
 
 // --- Excluir hóspede ---

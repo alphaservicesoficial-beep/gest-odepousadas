@@ -205,8 +205,8 @@ def delete_guest(guest_id: str):
 @router.post("/guests/{guest_id}/new_reservation")
 def create_new_reservation_from_guest(guest_id: str, data: Guest):
     """
-    Cria uma nova reserva a partir de um hóspede existente, sem criar um novo hóspede.
-    Mantém o histórico de reservas anteriores.
+    Cria uma nova reserva a partir de um hóspede existente.
+    Mantém o histórico anterior e atualiza os dados do hóspede.
     """
     try:
         # 1️⃣ Buscar hóspede existente
@@ -216,13 +216,11 @@ def create_new_reservation_from_guest(guest_id: str, data: Guest):
         if not guest_doc.exists:
             raise HTTPException(status_code=404, detail="Hóspede não encontrado.")
 
-        guest_data = guest_doc.to_dict()
-
         # 2️⃣ Buscar número do quarto
         room_doc = db.collection("rooms").document(data.roomId).get()
         room_number = room_doc.to_dict().get("identifier") if room_doc.exists else None
 
-        # 3️⃣ Determinar status conforme as datas
+        # 3️⃣ Determinar status
         today = date.today()
         check_in = date.fromisoformat(data.checkIn)
         check_out = date.fromisoformat(data.checkOut)
@@ -234,7 +232,7 @@ def create_new_reservation_from_guest(guest_id: str, data: Guest):
         else:
             status = "disponível"
 
-        # 4️⃣ Criar nova reserva no Firestore
+        # 4️⃣ Criar nova reserva
         new_reservation = {
             "guestId": guest_id,
             "guestName": data.fullName,
@@ -247,18 +245,27 @@ def create_new_reservation_from_guest(guest_id: str, data: Guest):
             "status": status,
             "notes": data.notes or "",
         }
-
         db.collection("reservations").add(new_reservation)
 
-        # 5️⃣ Atualizar status do quarto
-        update_room_status(
-            data.roomId,
-            status,
-            guest_name=data.fullName,
-            notes=data.notes,
-        )
+        # 5️⃣ Atualizar hóspede com dados atuais da nova reserva
+        guest_ref.update({
+            "fullName": data.fullName,
+            "cpf": data.cpf,
+            "phone": data.phone,
+            "email": data.email,
+            "roomId": data.roomId,
+            "checkIn": data.checkIn,
+            "checkOut": data.checkOut,
+            "guests": data.guests,
+            "value": data.value,
+            "notes": data.notes,
+            "roomNumber": room_number
+        })
 
-        return {"message": "Nova reserva criada com sucesso a partir do hóspede existente."}
+        # 6️⃣ Atualizar status do quarto
+        update_room_status(data.roomId, status, guest_name=data.fullName, notes=data.notes)
+
+        return {"message": "Nova reserva criada e hóspede atualizado com sucesso."}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
