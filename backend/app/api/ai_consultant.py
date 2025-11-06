@@ -11,7 +11,7 @@ router = APIRouter()
 
 # ---------- Configuração do Gemini ----------
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-model = genai.GenerativeModel("models/gemini-2.5-flash-latest")
+model = genai.GenerativeModel("models/gemini-2.5-flash")
   # ✅ modelo correto
 
 # ---------- Funções utilitárias ----------
@@ -179,7 +179,3 @@ def ai_consult(payload: dict = Body(...)):
         })
 
         return {"answer": resposta}
-
-    except Exception as e:
-        print("❌ ERRO NO CONSULTOR IA:", traceback.format_exc())
-        raise HTTPException(status_code=500, detail=f"Erro no consultor IA: {str(e)}")
