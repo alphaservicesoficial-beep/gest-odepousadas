@@ -42,22 +42,13 @@ import {
   
   // Tipo para os dados da Empresa (adaptado para incluir a reserva como Opcional)
   type Company = {
-      id: string;
-      name: string; // Razão social
-      cnpj: string;
-      mainContact: string; // Contato principal (Nome do representante)
-      email: string;
-      phone: string;
-      // Campos de Reserva (Opcionais)
-      checkIn?: string;
-      checkOut?: string;
-      guests?: number;
-      roomId?: string; // ID do Quarto
-      roomNumber?: string; // Número/Identificador do Quarto
-      amenities?: string[];
-      value?: string;
-      notes?: string;
-  createdAt?: string; // Observações gerais
+    id: string;
+    name: string;        // Nome da empresa (obrigatório)
+    responsible: string; // Responsável (obrigatório)
+    cnpj: string;        // CNPJ (obrigatório)
+    email?: string;      // Opcional
+    phone?: string;      // Opcional
+    createdAt?: string;
   };
   
 
@@ -104,39 +95,25 @@ const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
   
     const [form, setForm] = useState<Partial<Company>>({
-      name: "",
-      cnpj: "",
-      mainContact: "",
-      email: "",
-      phone: "",
-      notes: "",
-      checkIn: "",
-      checkOut: "",
-      guests: 1,
-      amenities: [],
-      value: "",
-      roomId: "",
-      roomNumber: "",
-    });
+    name: "",
+    responsible: "",
+    cnpj: "",
+    email: "",
+    phone: "",
+  });
+  
   
     // --- Funções de Estado e Modal ---
     function resetForm() {
-      setForm({
-        name: "",
-        cnpj: "",
-        mainContact: "",
-        email: "",
-        phone: "",
-        notes: "",
-        checkIn: "",
-        checkOut: "",
-        guests: 1,
-        amenities: [],
-        value: "",
-        roomId: "",
-        roomNumber: "",
-      });
-    }
+    setForm({
+      name: "",
+      responsible: "",
+      cnpj: "",
+      email: "",
+      phone: "",
+    });
+  }
+  
   
     const openCreateModal = () => {
       setIsEditing(false);
@@ -196,34 +173,7 @@ const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
       loadCompanies();
     }, []);
 
-  // Carregar quartos disponíveis ao abrir a página
-useEffect(() => {
-  async function loadAvailableRooms() {
-    try {
-      const currentRoomId = isEditing && form.roomId ? form.roomId : "";
-
-      // Busca todos os quartos do backend
-      const response = await fetch(`${baseUrl}/rooms`);
-      if (!response.ok) throw new Error("Erro ao buscar quartos disponíveis");
-
-      const allRooms = await response.json();
-
-      // Filtra apenas os disponíveis ou o atual (quando editando)
-      const filteredRooms = allRooms.filter((room: any) =>
-        room.status === "disponível" ||
-        (isEditing && room.id === currentRoomId)
-      );
-
-      setAvailableRooms(filteredRooms);
-    } catch (error) {
-      console.error("Erro ao buscar quartos disponíveis:", error);
-      setAvailableRooms([]);
-    }
-  }
-
-  loadAvailableRooms();
-}, [isEditing, form.roomId]);
-
+  
   
   
     // --- Função de Suporte: ATUALIZAÇÃO DO QUARTO ---
@@ -293,43 +243,14 @@ async function handleSave(e: FormEvent) {
     // 2️⃣ ATUALIZAR STATUS DOS QUARTOS (LIBERAR / RESERVAR)
     // ====================================================
     const oldCompany = companies.find((c) => c.id === dataToSave.id);
-    const oldRoomId = oldCompany?.roomId;
-    const newRoomId = dataToSave.roomId;
-
-    // 🟢 Libera o quarto antigo (se trocou)
-    if (isEditing && oldRoomId && oldRoomId !== newRoomId) {
-      await fetch(`${baseUrl}/rooms/${oldRoomId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "disponível" }),
-      });
-      console.log(`🟢 Quarto ${oldRoomId} liberado`);
-    }
-
-    // 🔵 Reserva o novo quarto (ou mantém o atual se igual)
-    if (newRoomId) {
-      await fetch(`${baseUrl}/rooms/${newRoomId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "reservado" }),
-      });
-      console.log(`🔵 Quarto ${newRoomId} reservado`);
-    }
-
-    // ====================================================
-    // 3️⃣ RECARREGAR LISTA E RESETAR
-    // ====================================================
-    await loadCompanies();
-    setIsModalOpen(false);
-    setIsEditing(false);
-    resetForm();
+    
+    // fecha a função aqui 👇
   } catch (error) {
-    console.error("❌ Erro ao salvar empresa e atualizar quarto:", error);
-    alert("Erro ao salvar empresa. Verifique o console.");
+    console.error("Erro ao salvar empresa:", error);
   }
-}
+} // <-- ESSA CHAVE FECHA handleSave
 
-
+// e aqui começa a outra função fora dela
 async function handleGenerateNewReservation() {
   if (!form.id) {
     alert("Empresa não identificada.");
@@ -376,10 +297,7 @@ async function handleGenerateNewReservation() {
   method: "DELETE",
 });
 
-          // 2. LIBERAR O QUARTO associado, se houver
-          if (companyToDelete.roomId) {
-              await updateRoomStatus(companyToDelete.roomId, 'disponível');
-          }
+          
   
           // 3. Recarregar a lista
           await loadCompanies(); 
@@ -397,10 +315,10 @@ async function handleGenerateNewReservation() {
       if (!searchLower) return true;
   
       return (
-        company.name.toLowerCase().includes(searchLower) ||
-        company.cnpj.toLowerCase().includes(searchLower) ||
-        company.mainContact.toLowerCase().includes(searchLower)
-      );
+    company.name.toLowerCase().includes(searchLower) ||
+    company.cnpj.toLowerCase().includes(searchLower) ||
+    company.responsible.toLowerCase().includes(searchLower)
+  );
     });
   
     // --- Renderização ---
@@ -423,7 +341,7 @@ async function handleGenerateNewReservation() {
     <Search size={16} className="text-muted" />
     <input
       type="search"
-      placeholder="Pesquisar empresa por nome, CNPJ ou quarto..."
+      placeholder="Pesquisar empresa por nome, responsável ou CNPJ..."
       className="bg-transparent outline-none flex-1"
       value={searchTerm}
       onChange={(e) => setSearchTerm(e.target.value)}
@@ -436,8 +354,9 @@ async function handleGenerateNewReservation() {
               <thead className="surface-table-head">
                 <tr>
                   <th className="px-4 py-3">Empresa (Razão Social)</th>
+            <th className="px-4 py-3">Responsável</th>
                   <th className="px-4 py-3">CNPJ</th>
-                  <th className="px-4 py-3">Contato Principal</th>
+        
                   <th className="px-4 py-3">Telefone</th>
                   <th className="px-4 py-3 text-center">Ações</th>
                 </tr>
@@ -448,15 +367,14 @@ async function handleGenerateNewReservation() {
                     <td className="px-4 py-3 font-medium text-emphasis">
                       {company.name}
                     </td>
+  <td className="px-4 py-3 text-muted-strong">
+                      {company.responsible}
+                    </td>
                     <td className="px-4 py-3 text-muted-strong">
                       {maskCNPJ(company.cnpj)}
                     </td>
-                    <td className="px-4 py-3 text-muted-strong">
-                      {company.mainContact}
-                    </td>
-                    <td className="px-4 py-3 text-muted">
-                      {maskPhone(company.phone)}
-                    </td>
+                    
+                    
                     <td className="px-4 py-3 text-center">
                       <button
                         className="btn-secondary btn-sm"
@@ -496,7 +414,7 @@ async function handleGenerateNewReservation() {
                       </div>
                       <div className="grid gap-1 text-xs text-muted-strong">
                           <span>CNPJ: {maskCNPJ(company.cnpj)}</span>
-                          <span>Contato: {company.mainContact}</span>
+                          <span>Contato: {company.responsible}</span>
                           <span>E-mail: {company.email}</span>
                       </div>
                   </div>
@@ -539,184 +457,79 @@ async function handleGenerateNewReservation() {
               <form className="mt-6 grid grid-cols-6 gap-4" onSubmit={handleSave}>
             
   
-  
-                {/* Razão social */}
-                <label className="flex flex-col col-span-2">
-                  <span className="text-sm mb-1">Razão social</span>
-                  <input
-                    name="name" 
-                    required
-                    value={form.name || ""}
-                    onChange={handleFormChange}
-                    className="surface-input"
-                    placeholder="Ex.: Viagens Brasil LTDA"
-                  />
-                </label>
-  
-                {/* Contato Principal */}
-                <label className="flex flex-col col-span-2">
-                  <span className="text-sm mb-1">Contato</span>
-                  <input
-                    name="mainContact" 
-                    required
-                    value={form.mainContact || ""}
-                    onChange={handleFormChange}
-                    className="surface-input"
-                    placeholder="Nome do responsável"
-                  />
-                </label>
-  
-                {/* CNPJ */}
-                <label className="flex flex-col col-span-2">
-                  <span className="text-sm mb-1">CNPJ</span>
-                  <input
-                    name="cnpj" 
-                    required
-                    value={maskCNPJ(form.cnpj || "")}
-                    onChange={handleFormChange}
-                    className="surface-input"
-                    placeholder="00.000.000/0000-00"
-                  />
-                </label>
-  
-                {/* E-mail */}
-                <label className="flex flex-col col-span-2">
-                  <span className="text-sm mb-1">E-mail</span>
-                  <input
-                    name="email" 
-                    type="email"
-                    required
-                    value={form.email || ""}
-                    onChange={handleFormChange} 
-                    className="surface-input"
-                    placeholder="contato@empresa.com"
-                  />
-                </label>
-
-    {/* Telefone */}
-    <label className="flex flex-col col-span-2">
-      <span className="text-sm mb-1">Telefone</span>
-      <input
-        name="phone"
-        required
-        value={maskPhone(form.phone || "")}
-        onChange={handleFormChange}
-        className="surface-input"
-        placeholder="(00) 00000-0000"
-      />
-    </label>
-  
-                 {/* Valor (R$) */}
-                <label className="flex flex-col col-span-2">
-                  <span className="text-sm mb-1">Valor (R$)</span>
-                  <input
-                    name="value" 
-                    className="surface-input"
-                    value={form.value || ""}
-                    onChange={handleFormChange} 
-                    placeholder="Ex: 500,00"
-                  />
-                </label>
-  
-                {/* --- Separador de Seção --- */}
-                <div className="col-span-6 border-t border-slate-200 pt-4 dark:border-slate-800 mt-2">
-                  <p className="text-md font-bold text-emphasis mb-2">Detalhes da Reserva </p>
-                </div>
-  
-                {/* Nº do quarto (FILTRADO) */}
-{/* Nº do quarto (FILTRADO) */}
-<label className="flex flex-col col-span-2">
-  <span className="text-sm mb-1">Nº do quarto</span>
-  <select
-    name="roomId"
+  {/* Nome da empresa */}
+<label className="flex flex-col col-span-3">
+  <span className="text-sm mb-1">Razão Social *</span>
+  <input
+    name="name"
+    required
+    value={form.name || ""}
+    onChange={handleFormChange}
     className="surface-input"
-    value={form.roomId || ""}
-    onChange={(e) => {
-      const room = availableRooms.find((r) => r.id === e.target.value);
-      setForm({
-        ...form,
-        roomId: e.target.value,
-        roomNumber: room?.identifier || "",
-      });
-    }}
-  >
-    <option value="">Selecione um quarto</option>
+    placeholder="Ex.: Pousada Bela Vista"
+  />
+</label>
 
-    {/* ✅ Quartos disponíveis */}
-    {availableRooms.map((r) => (
-      <option key={r.id} value={r.id}>
-        Quarto {r.identifier}
-      </option>
-    ))}
+{/* Responsável */}
+<label className="flex flex-col col-span-3">
+  <span className="text-sm mb-1">Responsável *</span>
+  <input
+    name="responsible"
+    required
+    value={form.responsible || ""}
+    onChange={handleFormChange}
+    className="surface-input"
+    placeholder="Nome do responsável"
+  />
+</label>
 
-    {/* ✅ Se o quarto atual não estiver disponível, exibe mesmo assim */}
-    {isEditing &&
-      form.roomId &&
-      !availableRooms.some((r) => r.id === form.roomId) && (
-        <option key={form.roomId} value={form.roomId}>
-          Quarto {form.roomNumber || form.roomId} (Atual - Ocupado/Reservado)
-        </option>
-      )}
-  </select>
+{/* CNPJ */}
+<label className="flex flex-col col-span-3">
+  <span className="text-sm mb-1">CNPJ *</span>
+  <input
+    name="cnpj"
+    required
+    value={maskCNPJ(form.cnpj || "")}
+    onChange={handleFormChange}
+    className="surface-input"
+    placeholder="00.000.000/0000-00"
+  />
+</label>
+
+{/* Email */}
+<label className="flex flex-col col-span-3">
+  <span className="text-sm mb-1">E-mail</span>
+  <input
+    name="email"
+    type="email"
+    value={form.email || ""}
+    onChange={handleFormChange}
+    className="surface-input"
+    placeholder="contato@empresa.com"
+  />
+</label>
+
+{/* Telefone */}
+<label className="flex flex-col col-span-3">
+  <span className="text-sm mb-1">Telefone</span>
+  <input
+    name="phone"
+    value={maskPhone(form.phone || "")}
+    onChange={handleFormChange}
+    className="surface-input"
+    placeholder="(00) 00000-0000"
+  />
 </label>
 
 
-  
-                {/* Nº de pessoas */}
-                <label className="flex flex-col col-span-2">
-                  <span className="text-sm mb-1">Nº pessoas</span>
-                  <input
-                    name="guests" 
-                    type="number"
-                    className="surface-input"
-                    value={form.guests || 1}
-                    onChange={(e) =>
-                      setForm({ ...form, guests: Number(e.target.value) })
-                    }
-                    min="1"
-                  />
-                </label>
-  
-               
-                
-                {/* Data de entrada */}
-                <label className="flex flex-col col-span-1">
-                  <span className="text-sm mb-1">Entrada</span>
-                  <input
-                    name="checkIn" 
-                    type="date"
-                    className="surface-input"
-                    value={form.checkIn || ""}
-                    onChange={handleFormChange}
-                  />
-                </label>
-  
-                {/* Data de saída */}
-                <label className="flex flex-col col-span-1">
-                  <span className="text-sm mb-1">Saída</span>
-                  <input
-                    name="checkOut" 
-                    type="date"
-                    className="surface-input"
-                    value={form.checkOut || ""}
-                    onChange={handleFormChange}
-                  />
-                </label>
+                 
   
               
+
+
   
-                {/* Observações */}
-                <label className="flex flex-col col-span-6">
-                  <span className="text-sm mb-1">Observações (Geral/Reserva)</span>
-                  <textarea
-                    name="notes" 
-                    className="surface-input min-h-[80px]"
-                    value={form.notes || ""}
-                    onChange={handleFormChange}
-                    placeholder="Notas internas sobre a empresa ou detalhes da reserva..."
-                  />
-                </label>
-                
+             
+                  
                 {/* Bloco de Ações */}
                 <div className="col-span-6 flex justify-end gap-3 mt-4">
   <button
@@ -768,25 +581,13 @@ async function handleGenerateNewReservation() {
                 </button>
               </div>
   
-              <div className="mt-4 space-y-3 text-sm">
-                  <p className="text-md font-bold text-emphasis border-b border-slate-200 dark:border-slate-800 pb-1">Contato</p>
-                  <p><strong>Contato Principal:</strong> {selectedCompany.mainContact}</p>
-                  <p><strong>E-mail:</strong> {selectedCompany.email}</p>
-                  <p><strong>Telefone:</strong> {maskPhone(selectedCompany.phone)}</p>
-  
-                  {(selectedCompany.roomId || selectedCompany.checkIn) && (
-                      <>
-                          <p className="text-md font-bold text-emphasis border-b border-slate-200 dark:border-slate-800 pt-3 pb-1">Reserva</p>
-                          {selectedCompany.roomNumber && <p><strong>Quarto:</strong> {selectedCompany.roomNumber}</p>}
-                          {selectedCompany.checkIn && <p><strong>Check-in:</strong> {new Date(selectedCompany.checkIn).toLocaleDateString('pt-BR')}</p>}
-                          {selectedCompany.checkOut && <p><strong>Check-out:</strong> {new Date(selectedCompany.checkOut).toLocaleDateString('pt-BR')}</p>}
-                          {selectedCompany.guests && <p><strong>Pessoas:</strong> {selectedCompany.guests}</p>}
-                          {selectedCompany.value && <p><strong>Valor Negociado (R$):</strong> {selectedCompany.value}</p>}
-                          {selectedCompany.notes && <p><strong>Notas:</strong> {selectedCompany.notes}</p>}
-                      </>
-                  )}
-                  
-              </div>
+              <div className="mt-4 space-y-2 text-sm">
+  <p><strong>Responsável:</strong> {selectedCompany.responsible}</p>
+  <p><strong>CNPJ:</strong> {maskCNPJ(selectedCompany.cnpj)}</p>
+  <p><strong>E-mail:</strong> {selectedCompany.email || "-"}</p>
+  <p><strong>Telefone:</strong> {maskPhone(selectedCompany.phone || "")}</p>
+</div>
+
   
               <div className="mt-6 flex justify-end gap-3">
                 <button

@@ -385,7 +385,7 @@ async function handleDelete(guestToDelete: Guest) {
     <Search size={16} className="text-muted" />
     <input
       type="search"
-      placeholder="Pesquisar hóspede por nome, CPF ou quarto..."
+      placeholder="Pesquisar hóspede por nome ou CPF"
       className="bg-transparent outline-none flex-1"
       value={searchTerm}
       onChange={(e) => setSearchTerm(e.target.value)}
