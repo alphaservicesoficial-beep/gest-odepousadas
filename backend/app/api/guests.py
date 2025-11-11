@@ -18,6 +18,7 @@ class Guest(BaseModel):
 
 # =====================================================
 # 🔹 FUNÇÃO AUXILIAR — Atualiza status e informações do quarto
+# (mantida apenas se for usada em outro módulo)
 # =====================================================
 def update_room_status(room_id: str, new_status: str, guest_name: str = None, notes: str = None):
     """
@@ -42,10 +43,6 @@ def update_room_status(room_id: str, new_status: str, guest_name: str = None, no
 
 
 # =====================================================
-# 🔹 ROTAS DE HÓSPEDES
-# =====================================================
-
-# =====================================================
 # 🔹 LISTAR HÓSPEDES
 # =====================================================
 @router.get("/guests")
@@ -57,7 +54,7 @@ def get_guests():
             data = doc.to_dict()
             data["id"] = doc.id
             guests.append(data)
-        return guests
+        return sorted(guests, key=lambda x: x.get("createdAt", ""), reverse=True)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -66,17 +63,20 @@ def get_guests():
 # 🔹 CRIAR HÓSPEDE
 # =====================================================
 @router.post("/guests")
-def create_guest(guest: dict):
-    """Cria um novo hóspede simples (sem vínculo com reserva ou quarto)"""
+def create_guest(guest: Guest):
+    """Cria um novo hóspede simples (sem reserva)"""
     try:
-        ref = db.collection("guests").document()
-        ref.set({
-            "fullName": guest.get("fullName"),
-            "cpf": guest.get("cpf"),
-            "email": guest.get("email", None),
-            "phone": guest.get("phone", None),
+        guest_ref = db.collection("guests").document()
+        guest_ref.set({
+            "fullName": guest.fullName.strip(),
+            "cpf": guest.cpf.strip(),
+            "phone": guest.phone or "",
+            "email": guest.email or "",
+            "createdAt": date.today().isoformat(),
         })
+
         return {"message": "Hóspede criado com sucesso!"}
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -85,22 +85,24 @@ def create_guest(guest: dict):
 # 🔹 ATUALIZAR HÓSPEDE
 # =====================================================
 @router.put("/guests/{guest_id}")
-def update_guest(guest_id: str, guest: dict):
+def update_guest(guest_id: str, guest: Guest):
     """Atualiza os dados básicos do hóspede"""
     try:
         ref = db.collection("guests").document(guest_id)
-        if not ref.get().exists:
+        doc = ref.get()
+        if not doc.exists:
             raise HTTPException(status_code=404, detail="Hóspede não encontrado.")
 
         update_data = {
-            "fullName": guest.get("fullName"),
-            "cpf": guest.get("cpf"),
-            "email": guest.get("email", None),
-            "phone": guest.get("phone", None),
+            "fullName": guest.fullName.strip(),
+            "cpf": guest.cpf.strip(),
+            "email": guest.email or "",
+            "phone": guest.phone or "",
         }
 
         ref.update(update_data)
         return {"message": "Hóspede atualizado com sucesso!"}
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -113,9 +115,12 @@ def delete_guest(guest_id: str):
     """Remove hóspede permanentemente"""
     try:
         ref = db.collection("guests").document(guest_id)
-        if not ref.get().exists:
+        doc = ref.get()
+        if not doc.exists:
             raise HTTPException(status_code=404, detail="Hóspede não encontrado.")
+
         ref.delete()
         return {"message": "Hóspede removido com sucesso."}
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
