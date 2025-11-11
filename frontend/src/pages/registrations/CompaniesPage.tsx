@@ -56,7 +56,8 @@ import {
       roomNumber?: string; // Número/Identificador do Quarto
       amenities?: string[];
       value?: string;
-      notes?: string; // Observações gerais
+      notes?: string;
+  createdAt?: string; // Observações gerais
   };
   
 
@@ -83,6 +84,14 @@ import {
       .substring(0, 15);
   };
   
+
+  // --- Função utilitária para ordenação (mais recente → mais antigo)
+function getCompanySortKey(c: { createdAt?: string; checkIn?: string }) {
+  if (c.createdAt) return Date.parse(c.createdAt);
+  if (c.checkIn) return Date.parse(c.checkIn);
+  return 0;
+}
+
   
   export default function CompaniesPage() {
     const [companies, setCompanies] = useState<Company[]>([]);
@@ -167,8 +176,15 @@ const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
       
       try {
           const response = await fetch(`${baseUrl}/companies`);
-const data = await response.json();
-setCompanies(data);
+  const data = await response.json();
+
+  // Ordena do mais recente (último criado) para o mais antigo
+  const sortedCompanies = data.sort(
+    (a: any, b: any) => getCompanySortKey(b) - getCompanySortKey(a)
+  );
+  
+  setCompanies(sortedCompanies);
+  
 
       } catch (error) {
           // console.error("Erro ao carregar empresas do Firebase. Usando array vazio.", error);
@@ -245,6 +261,11 @@ async function handleSave(e: FormEvent) {
     cnpj: form.cnpj ? form.cnpj.replace(/\D/g, "") : "",
     phone: form.phone ? form.phone.replace(/\D/g, "") : "",
   } as Company;
+
+  if (!isEditing) {
+    dataToSave.createdAt = new Date().toISOString();
+  }
+  
 
   try {
     // ====================================================

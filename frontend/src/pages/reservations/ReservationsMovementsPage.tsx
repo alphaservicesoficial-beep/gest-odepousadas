@@ -73,6 +73,16 @@ function ReservationsMovementsPage() {
     alert(`Reserva confirmada! Total: ${formattedTotal}`);
   };
 
+
+
+  // --- Função para formatar datas em DD/MM/AAAA ---
+function formatDateToBR(dateStr?: string): string {
+  if (!dateStr) return "--"; // Caso o campo venha vazio
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr; // Retorna original se não for válida
+  return date.toLocaleDateString("pt-BR", { timeZone: "UTC" });
+}
+
   return (
     <div className="space-y-6">
       
@@ -112,7 +122,8 @@ function ReservationsMovementsPage() {
                     <StatusBadge label={item.reservationStatus || "Check-in"} status="success" />
                   </div>
                   <p className="mt-2 text-xs text-muted">
-                    Quarto {item.room} • {item.checkIn ?? "--"} • {item.guestsCount}{" "}
+                  Quarto {item.room} • {formatDateToBR(item.checkIn)} • {item.guestsCount}{" "}
+
                     {item.guestsCount === 1 ? "hóspede" : "hóspedes"}
                   </p>
                 </li>
@@ -137,7 +148,8 @@ function ReservationsMovementsPage() {
                     <StatusBadge label={item.reservationStatus || "Check-out"} status="warning" />
                   </div>
                   <p className="mt-2 text-xs text-muted">
-                    Quarto {item.room} • {item.checkOut ?? "--"} • {item.guestsCount}{" "}
+                  Quarto {item.room} • {formatDateToBR(item.checkOut)} • {item.guestsCount}{" "}
+
                     {item.guestsCount === 1 ? "hóspede" : "hóspedes"}
                   </p>
                 </li>

@@ -49,15 +49,12 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     label: "Reservas",
     icon: CalendarCheck,
     children: [
-      {
-        label: "Movimentos",
-        path: "/reservas/movimentos",
-        icon: CalendarCheck,
-      },
       { label: "Lista de Reservas", path: "/reservas/lista", icon: ListChecks },
+      { label: "Movimentos", path: "/reservas/movimentos", icon: CalendarCheck },
       { label: "Calendário", path: "/reservas/calendario", icon: CalendarDays },
     ],
   },
+  
   {
     label: "Financeiro",
     icon: LineChart,

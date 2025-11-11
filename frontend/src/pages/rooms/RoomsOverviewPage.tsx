@@ -651,21 +651,17 @@ function RoomDetailsModal({
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/70 p-4 backdrop-blur-sm">
             <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl transition-colors dark:border-slate-800 dark:bg-slate-950">
-                <div className="relative">
-                    <RoomImageCarousel
-                        images={selectedRoom.images ?? []}
-                        alt={`Detalhes do Quarto ${selectedRoom.identifier}`}
-                    />
-                    
-                    <button
-                        type="button"
-                        onClick={() => setSelectedRoom(null)} 
-                        className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-slate-900/60 text-white shadow backdrop-blur hover:bg-slate-900/80 focus:outline-none focus:ring-2 focus:ring-primary/40"
-                        aria-label="Fechar detalhes do quarto"
-                    >
-                        <X size={18} aria-hidden="true" />
-                    </button>
-                </div>
+            <div className="flex justify-end p-3">
+  <button
+    type="button"
+    onClick={() => setSelectedRoom(null)}
+    className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900/60 text-white shadow backdrop-blur hover:bg-slate-900/80 focus:outline-none focus:ring-2 focus:ring-primary/40"
+    aria-label="Fechar detalhes do quarto"
+  >
+    <X size={18} aria-hidden="true" />
+  </button>
+</div>
+
                 
                 <div className="p-6">
                     <div className="flex items-center justify-between">
@@ -1393,15 +1389,16 @@ setEditingRoom(null);
           Detalhes
         </button>
         <button
-          className="btn-outline-danger btn-sm flex-auto uppercase tracking-wide"
-          onClick={() => {
-            setMaintenanceRoom(room);
-            setMaintenanceForm({ issue: "", priority: "média" });
-          }}
-          disabled={room.status === "manutenção"}
-        >
-          Manutenção
-        </button>
+  className="btn-outline-success btn-sm flex-auto uppercase tracking-wide"
+  onClick={() => {
+    // Ainda sem funcionalidade
+    console.log(`Check-in clicado para o quarto ${room.identifier}`);
+  }}
+>
+  Check-in
+</button>
+
+
       </div>
     </div>
   ))}

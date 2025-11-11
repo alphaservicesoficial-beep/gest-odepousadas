@@ -13,10 +13,22 @@ interface Income {
   method: string;
 }
 
+// 🔹 Função utilitária para formatar a data (YYYY-MM-DD → DD/MM/AAAA)
+function formatDateToBR(dateStr?: string): string {
+  if (!dateStr) return "--";
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
+  return date.toLocaleDateString("pt-BR", { timeZone: "UTC" });
+}
+
+// 🔹 Função para formatar valor monetário
+function formatCurrencyBR(value: number): string {
+  return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
 function FinancialIncomePage() {
   const [incomes, setIncomes] = useState<Income[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [formValues, setFormValues] = useState({
     description: "",
     date: "",
@@ -29,9 +41,13 @@ function FinancialIncomePage() {
   }, []);
 
   const fetchIncomes = async () => {
-    const res = await fetch(`${baseUrl}/incomes`);
-    const data = await res.json();
-    setIncomes(data);
+    try {
+      const res = await fetch(`${baseUrl}/incomes`);
+      const data = await res.json();
+      setIncomes(data);
+    } catch (error) {
+      console.error("Erro ao buscar receitas:", error);
+    }
   };
 
   const handleCreateSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -70,6 +86,7 @@ function FinancialIncomePage() {
           </button>
         </div>
 
+        {/* 💻 Layout Desktop */}
         <div className="mt-4 hidden overflow-x-auto md:block">
           <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-800">
             <thead>
@@ -84,35 +101,31 @@ function FinancialIncomePage() {
               {incomes.map((inc) => (
                 <tr key={inc.id}>
                   <td className="px-4 py-3">{inc.description}</td>
-                  <td className="px-4 py-3">{inc.date}</td>
-                  <td className="px-4 py-3 font-semibold">
-                    R$ {inc.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                  </td>
+                  <td className="px-4 py-3">{formatDateToBR(inc.date)}</td>
+                  <td className="px-4 py-3 font-semibold">{formatCurrencyBR(inc.amount)}</td>
                   <td className="px-4 py-3">{inc.method}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
- 
-        {/* 📱 Layout mobile */}
+
+        {/* 📱 Layout Mobile */}
         <div className="mt-4 space-y-3 md:hidden">
-          {incomes.map((expense) => (
-            <div key={expense.id} className="surface-toolbar flex flex-col gap-2 p-4">
-              <p className="text-emphasis">{expense.description}</p>
-              <div className="text-sm text-muted">
-                <p>Descrição: {expense.description}</p>
-                <p>Data: {expense.date}</p>
+          {incomes.map((income) => (
+            <div key={income.id} className="surface-toolbar flex flex-col gap-2 p-4">
+              <p className="text-emphasis font-semibold">{income.description}</p>
+              <div className="text-sm text-muted space-y-1">
+                <p>Data: {formatDateToBR(income.date)}</p>
+                <p>Método: {income.method}</p>
               </div>
-              <p className="font-semibold text-emphasis">
-                R$ {expense.amount.toFixed(2).replace(".", ",")}
-              </p>
+              <p className="font-semibold text-emphasis">{formatCurrencyBR(income.amount)}</p>
             </div>
           ))}
         </div>
-
       </Card>
 
+      {/* 🔹 Modal de criação */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-6 backdrop-blur-sm">
           <div className="w-full max-w-[22rem] rounded-2xl border border-slate-200 bg-white p-6 text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
@@ -142,6 +155,9 @@ function FinancialIncomePage() {
                 placeholder="Valor"
                 className="surface-input"
                 required
+                type="number"
+                min="0"
+                step="0.01"
                 value={formValues.amount}
                 onChange={(e) => setFormValues({ ...formValues, amount: e.target.value })}
               />

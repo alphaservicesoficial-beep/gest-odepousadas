@@ -12,6 +12,19 @@ interface Expense {
   amount: number;
 }
 
+// 🔹 Função para formatar data no padrão brasileiro (DD/MM/AAAA)
+function formatDateToBR(dateStr?: string): string {
+  if (!dateStr) return "--";
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
+  return date.toLocaleDateString("pt-BR", { timeZone: "UTC" });
+}
+
+// 🔹 Função para formatar moeda (R$ 1.234,56)
+function formatCurrencyBR(value: number): string {
+  return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
 function FinancialExpensesPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,14 +110,13 @@ function FinancialExpensesPage() {
           </button>
         </div>
 
+        {/* 💰 Totalizador */}
         <div className="flex flex-col gap-3 mt-6 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-muted transition-colors dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-300 sm:flex-row sm:items-center sm:justify-between">
           <span>Total de despesas</span>
-          <strong className="text-lg text-emphasis">
-            R$ {total.toFixed(2).replace(".", ",")}
-          </strong>
+          <strong className="text-lg text-emphasis">{formatCurrencyBR(total)}</strong>
         </div>
 
-        {/* 🧾 Tabela */}
+        {/* 🧾 Tabela desktop */}
         <div className="mt-4 hidden overflow-x-auto md:block">
           <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-800">
             <thead className="surface-table-head">
@@ -120,9 +132,9 @@ function FinancialExpensesPage() {
                 <tr key={expense.id} className="surface-table-row">
                   <td className="px-4 py-3 text-emphasis">{expense.description}</td>
                   <td className="px-4 py-3 text-muted-strong">{expense.category}</td>
-                  <td className="px-4 py-3 text-muted">{expense.date}</td>
+                  <td className="px-4 py-3 text-muted">{formatDateToBR(expense.date)}</td>
                   <td className="px-4 py-3 font-semibold text-emphasis">
-                    R$ {expense.amount.toFixed(2).replace(".", ",")}
+                    {formatCurrencyBR(expense.amount)}
                   </td>
                 </tr>
               ))}
@@ -134,13 +146,13 @@ function FinancialExpensesPage() {
         <div className="mt-4 space-y-3 md:hidden">
           {expenses.map((expense) => (
             <div key={expense.id} className="surface-toolbar flex flex-col gap-2 p-4">
-              <p className="text-emphasis">{expense.description}</p>
+              <p className="text-emphasis font-semibold">{expense.description}</p>
               <div className="text-sm text-muted">
                 <p>Categoria: {expense.category}</p>
-                <p>Data: {expense.date}</p>
+                <p>Data: {formatDateToBR(expense.date)}</p>
               </div>
               <p className="font-semibold text-emphasis">
-                R$ {expense.amount.toFixed(2).replace(".", ",")}
+                {formatCurrencyBR(expense.amount)}
               </p>
             </div>
           ))}
@@ -172,9 +184,7 @@ function FinancialExpensesPage() {
                 <input
                   required
                   value={formValues.description}
-                  onChange={(event) =>
-                    setFormValues((v) => ({ ...v, description: event.target.value }))
-                  }
+                  onChange={(e) => setFormValues((v) => ({ ...v, description: e.target.value }))}
                   className="surface-input mt-2"
                   placeholder="Ex: Compra de produtos"
                 />
@@ -185,9 +195,7 @@ function FinancialExpensesPage() {
                 <input
                   required
                   value={formValues.category}
-                  onChange={(event) =>
-                    setFormValues((v) => ({ ...v, category: event.target.value }))
-                  }
+                  onChange={(e) => setFormValues((v) => ({ ...v, category: e.target.value }))}
                   className="surface-input mt-2"
                   placeholder="Ex: Manutenção, Suprimentos..."
                 />
@@ -199,9 +207,7 @@ function FinancialExpensesPage() {
                   type="date"
                   required
                   value={formValues.date}
-                  onChange={(event) =>
-                    setFormValues((v) => ({ ...v, date: event.target.value }))
-                  }
+                  onChange={(e) => setFormValues((v) => ({ ...v, date: e.target.value }))}
                   className="surface-input mt-2"
                 />
               </label>
@@ -211,9 +217,7 @@ function FinancialExpensesPage() {
                 <input
                   required
                   value={formValues.amount}
-                  onChange={(event) =>
-                    setFormValues((v) => ({ ...v, amount: event.target.value }))
-                  }
+                  onChange={(e) => setFormValues((v) => ({ ...v, amount: e.target.value }))}
                   className="surface-input mt-2"
                   placeholder="R$ 0,00"
                 />

@@ -99,10 +99,11 @@ useEffect(() => {
 
 // --- COMPONENTE PRINCIPAL ---
 function ReservationsCalendarPage() {
-  const [selectedDay, setSelectedDay] = useState<number | null>(13);
-
-  const [currentMonth, setCurrentMonth] = useState(10); // Outubro (1–12)
-const [currentYear, setCurrentYear] = useState(2025);
+  // Data atual do sistema
+const today = new Date();
+const [selectedDay, setSelectedDay] = useState<number | null>(today.getDate());
+const [currentMonth, setCurrentMonth] = useState(today.getMonth() + 1);
+const [currentYear, setCurrentYear] = useState(today.getFullYear());
 
 
   const daysArray = useMemo(
@@ -207,6 +208,13 @@ const dailyMovements = movements.map((m) => {
   // RENDERIZAÇÃO
   // ----------------------------------------------------
 
+// --- Função para exibir datas no formato brasileiro (DD/MM/AAAA)
+function formatDateToBR(dateStr?: string): string {
+  if (!dateStr) return "--";
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
+  return date.toLocaleDateString("pt-BR", { timeZone: "UTC" });
+}
 
 
 
@@ -224,9 +232,10 @@ const dailyMovements = movements.map((m) => {
   </button>
 
   <div className="text-center">
-    <p className="text-xs text-muted">
-      {String(currentYear)}-{String(currentMonth).padStart(2, "0")}-01
-    </p>
+  <p className="text-xs text-muted">
+  {formatDateToBR(`${currentYear}-${String(currentMonth).padStart(2, "0")}-01`)}
+</p>
+
     <h2 className="text-lg font-semibold text-emphasis">
       {MONTH_NAMES[currentMonth - 1]} {currentYear}
     </h2>
@@ -252,24 +261,37 @@ const dailyMovements = movements.map((m) => {
             </div>
 
             <div className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-7">
-              {daysArray.map((day) => {
+            {daysArray.map((day) => {
   const isSelected = selectedDay === day;
   const count = reservationCounts?.[day] || 0;
- 
-                
-                return (
-                  <button
-                    key={day}
-                    onClick={() => setSelectedDay(day)}
-                    className={`flex h-16 flex-col justify-center rounded-xl border text-sm transition sm:h-20 ${isSelected ? "border-primary bg-primary/10 text-primary" : "border-slate-200 bg-white text-muted-strong hover:border-primary/50 hover:text-primary dark:border-slate-800 dark:bg-slate-900/50"}`}
-                  >
-                    <span className="font-semibold">{day}</span>
-                    <span className="text-[0.65rem] text-muted">
-                      {count} reserva{count !== 1 ? 's' : ''}
-                    </span>
-                  </button>
-                );
-              })}
+
+  // 👇 adiciona isso logo abaixo das duas const acima:
+  const isToday =
+    day === today.getDate() &&
+    currentMonth === today.getMonth() + 1 &&
+    currentYear === today.getFullYear();
+
+  // 👇 e substitui o className inteiro do botão por este:
+  return (
+    <button
+      key={day}
+      onClick={() => setSelectedDay(day)}
+      className={`flex h-16 flex-col justify-center rounded-xl border text-sm transition sm:h-20 ${
+        isSelected
+          ? "border-primary bg-primary/10 text-primary"
+          : isToday
+          ? "border-green-400 bg-green-100 text-green-700 dark:border-green-700 dark:bg-green-900/40"
+          : "border-slate-200 bg-white text-muted-strong hover:border-primary/50 hover:text-primary dark:border-slate-800 dark:bg-slate-900/50"
+      }`}
+    >
+      <span className="font-semibold">{day}</span>
+      <span className="text-[0.65rem] text-muted">
+        {count} reserva{count !== 1 ? 's' : ''}
+      </span>
+    </button>
+  );
+})}
+
             </div>
           </div>
 
@@ -278,9 +300,9 @@ const dailyMovements = movements.map((m) => {
             description="Movimentos associados à data selecionada."
             className="border-slate-200 text-slate-700 dark:border-slate-800 dark:text-slate-200"
           >
-           <p className="text-sm text-muted">
-  {selectedDay
-    ? `Movimentos de ${selectedDay}/${currentMonth}/${currentYear}`
+          <p className="text-sm text-muted">
+  {selectedDateString
+    ? `Movimentos de ${formatDateToBR(selectedDateString)}`
     : "Selecione um dia para ver detalhes."}
 </p>
 

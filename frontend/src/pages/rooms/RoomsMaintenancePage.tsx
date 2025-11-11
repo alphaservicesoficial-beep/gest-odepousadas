@@ -45,6 +45,16 @@ const STATUS_TONE = {
   concluída: "success",
 } as const;
 
+// --- Função para exibir data no formato brasileiro (DD/MM/AAAA)
+// --- Função para exibir data no formato brasileiro (DD/MM/AAAA)
+function formatDateToBR(dateStr: string): string {
+  if (!dateStr || dateStr === "-") return "-";
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr; // caso não seja uma data válida
+  return date.toLocaleDateString("pt-BR", { timeZone: "UTC" });
+}
+
+
 
 function RoomsMaintenancePage() {
   const [tasks, setTasks] = useState<MaintenanceTask[]>([]);
@@ -106,28 +116,47 @@ function RoomsMaintenancePage() {
   // ----------------------------------------------------
   const filteredTasks = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
-
-    return tasks.filter((task) => {
-        
-        // Filtro de Status: Se o filtro for "concluída", mostra concluídas. Se não, oculta concluídas.
-        const matchesStatus = statusFilter 
-            ? task.status === statusFilter 
-            : task.status !== "concluída"; // Esconde as concluídas por padrão
-            
-        const matchesPriority = priorityFilter
-            ? task.priority === priorityFilter
-            : true;
-
-        const matchesSearch =
-            !normalizedSearch ||
-            task.roomIdentifier.toLowerCase().includes(normalizedSearch) ||
-            task.issue.toLowerCase().includes(normalizedSearch);
-            
-        return matchesSearch && matchesStatus && matchesPriority;
+  
+    // 🔹 Filtra por status, prioridade e busca
+    const filtered = tasks.filter((task) => {
+      const matchesStatus = statusFilter
+        ? task.status === statusFilter
+        : task.status !== "concluída"; // esconde concluídas por padrão
+  
+      const matchesPriority = priorityFilter
+        ? task.priority === priorityFilter
+        : true;
+  
+      const matchesSearch =
+        !normalizedSearch ||
+        task.roomIdentifier.toLowerCase().includes(normalizedSearch) ||
+        task.issue.toLowerCase().includes(normalizedSearch);
+  
+      return matchesSearch && matchesStatus && matchesPriority;
+    });
+  
+    // 🔹 Ordenação customizada
+    return filtered.sort((a, b) => {
+      // Caso esteja vendo as concluídas
+      if (statusFilter === "concluída") {
+        const dateA = new Date(a.completedOn || 0).getTime();
+        const dateB = new Date(b.completedOn || 0).getTime();
+        return dateB - dateA; // mais recente primeiro
+      }
+  
+      // Caso esteja vendo abertas ou em andamento
+      const priorityValue = { alta: 3, média: 2, baixa: 1 };
+      const priorityDiff = priorityValue[b.priority] - priorityValue[a.priority];
+  
+      if (priorityDiff !== 0) return priorityDiff; // primeiro as altas
+  
+      // Dentro da mesma prioridade, mais antigas primeiro (abertura)
+      const openedA = new Date(a.openedAt || 0).getTime();
+      const openedB = new Date(b.openedAt || 0).getTime();
+      return openedA - openedB;
     });
   }, [searchTerm, statusFilter, priorityFilter, tasks]);
-
-
+  
   // ----------------------------------------------------
   // 🔹 LÓGICA DO MODAL (Update)
   // ----------------------------------------------------
@@ -156,22 +185,30 @@ function RoomsMaintenancePage() {
   
     try {
       const newStatus = updateForm.status as MaintenanceStatus;
-      const newCompletedOn = newStatus === "concluída" ? updateForm.completedOn : "";
-  
-      // 🔹 Envia atualização para o backend FastAPI
-      const response = await fetch(`${baseUrl}/maintenance/${selectedTask.id}?status=${newStatus}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          notes: updateForm.notes,
-          completedOn: newCompletedOn,
-        }),
-      });
-  
-      if (!response.ok) {
-        throw new Error("Erro ao atualizar manutenção");
-      }
-  
+const newCompletedOn = newStatus === "concluída" ? updateForm.completedOn : "";
+
+const url = `${baseUrl}/maintenance/${selectedTask.id}?status=${encodeURIComponent(newStatus)}`;
+
+const response = await fetch(url, {
+  method: "PUT",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    notes: updateForm.notes || undefined,
+    completedOn: newCompletedOn || undefined,
+  }),
+});
+
+if (!response.ok) {
+  // Log detalhado pro console
+  const text = await response.text().catch(() => "");
+  console.error("PUT /maintenance falhou", {
+    status: response.status,
+    statusText: response.statusText,
+    body: text,
+  });
+  throw new Error("Erro ao atualizar manutenção");
+}
+
       const result = await response.json();
       console.log("✅ Atualização feita:", result);
   
@@ -188,12 +225,91 @@ function RoomsMaintenancePage() {
   };
   
 
+
+
+// 🔹 Estados para o modal e formulário
+const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+const [createForm, setCreateForm] = useState({
+  roomId: "",
+  roomIdentifier: "",
+  issue: "",
+  priority: "média" as MaintenancePriority,
+});
+
+// 🔹 Lista de quartos disponíveis
+const [rooms, setRooms] = useState<{ id: string; identifier: string; status: string }[]>([]);
+const [availableRooms, setAvailableRooms] = useState<typeof rooms>([]);
+
+// 🔹 Carrega os quartos disponíveis (status diferente de 'manutenção')
+const loadRooms = useCallback(async () => {
+  try {
+    const response = await fetch(`${baseUrl}/rooms`);
+    if (!response.ok) throw new Error("Erro ao carregar quartos");
+    const data = await response.json();
+
+    setRooms(data);
+    const filtered = data.filter((r: any) => r.status !== "manutenção");
+    setAvailableRooms(filtered);
+  } catch (error) {
+    console.error("Erro ao buscar quartos:", error);
+  }
+}, []);
+
+useEffect(() => {
+  loadRooms();
+}, [loadRooms]);
+
+// 🔹 Função de criação
+const handleCreateMaintenance = async (event: FormEvent) => {
+  event.preventDefault();
+
+  try {
+    const selectedRoom = rooms.find((r) => r.id === createForm.roomId);
+    if (!selectedRoom) throw new Error("Selecione um quarto válido");
+
+    const response = await fetch(`${baseUrl}/maintenance`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        roomId: selectedRoom.id,
+        roomIdentifier: selectedRoom.identifier,
+        issue: createForm.issue,
+        priority: createForm.priority,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "Erro ao criar manutenção");
+    }
+
+    alert("✅ Manutenção criada com sucesso!");
+    setIsCreateModalOpen(false);
+    setCreateForm({ roomId: "", roomIdentifier: "", issue: "", priority: "média" });
+    await loadTasks();
+    await loadRooms(); // recarrega os quartos
+  } catch (error) {
+    console.error("Erro ao criar manutenção:", error);
+    alert("Erro ao registrar manutenção. Verifique o console.");
+  }
+};
+
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-0">
       <Card
-        title="Manutenções"
-        description="Gerencie as tarefas abertas, em andamento e concluídas. As tarefas concluídas são ocultadas por padrão."
-      >
+  title="Manutenções"
+  description="Gerencie as tarefas abertas, em andamento e concluídas. As tarefas concluídas são ocultadas por padrão."
+  headerAction={
+    <button
+      className="btn-primary gap-2"
+      onClick={() => setIsCreateModalOpen(true)}
+    >
+      + Nova manutenção
+    </button>
+  }
+>
+
         {/* Filtros */}
         <div className="mb-4 grid gap-4 md:grid-cols-3">
             <div className="flex items-center gap-2 surface-input w-full px-3">
@@ -277,8 +393,9 @@ function RoomsMaintenancePage() {
                           status={STATUS_TONE[task.status]}
                         />
                       </td>
-                      <td className="px-4 py-3 text-muted">{task.openedAt}</td>
-                      <td className="px-4 py-3 text-muted">{task.completedOn}</td>
+                      <td className="px-4 py-3 text-muted">{formatDateToBR(task.openedAt)}</td>
+<td className="px-4 py-3 text-muted">{formatDateToBR(task.completedOn)}</td>
+
                       <td className="px-4 py-3 text-right">
                         <button
                           className="btn-secondary btn-sm uppercase tracking-wide"
@@ -332,14 +449,109 @@ function RoomsMaintenancePage() {
                     </button>
                   </div>
                   <div className="grid gap-1 text-xs text-muted">
-                    <span>Reportado em: {task.openedAt}</span>
-                    <span>Concluído em: {task.completedOn}</span>
+                  <span>Reportado em: {formatDateToBR(task.openedAt)}</span>
+<span>Concluído em: {formatDateToBR(task.completedOn)}</span>
+
                   </div>
                 </div>
               ))}
             </div>
         )}
       </Card>
+
+      {isCreateModalOpen && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-6 backdrop-blur-sm">
+    <div className="w-full max-w-[26rem] rounded-2xl border border-slate-200 bg-white p-6 text-slate-700 shadow-2xl transition-colors dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-emphasis">
+            Nova manutenção
+          </h2>
+          <p className="text-sm text-muted">
+            Registre um novo chamado de manutenção manualmente.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsCreateModalOpen(false)}
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-primary hover:text-primary dark:border-slate-800 dark:text-slate-300"
+          aria-label="Fechar modal"
+        >
+          <X className="h-4 w-4" aria-hidden="true" />
+        </button>
+      </div>
+
+      <form className="mt-6 space-y-4" onSubmit={handleCreateMaintenance}>
+        {/* Select do quarto */}
+        <label className="flex flex-col col-span-2">
+          <span className="text-sm mb-1">Nº do quarto</span>
+          <select
+            name="roomId"
+            className="surface-input"
+            value={createForm.roomId}
+            onChange={(e) => {
+              const room = rooms.find((r) => r.id === e.target.value);
+              setCreateForm({
+                ...createForm,
+                roomId: e.target.value,
+                roomIdentifier: room?.identifier || "",
+              });
+            }}
+            required
+          >
+            <option value="">Selecione um quarto</option>
+            {availableRooms.map((r) => (
+              <option key={r.id} value={r.id}>
+                Quarto {r.identifier}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {/* Descrição */}
+        <label className="block text-sm font-medium text-muted-strong">
+          Descrição do problema
+          <textarea
+            required
+            value={createForm.issue}
+            onChange={(e) =>
+              setCreateForm((prev) => ({ ...prev, issue: e.target.value }))
+            }
+            rows={3}
+            className="surface-input mt-2 resize-none"
+            placeholder="Ex: Vazamento no banheiro, TV sem sinal, etc."
+          />
+        </label>
+
+        {/* Prioridade */}
+        <label className="block text-sm font-medium text-muted-strong">
+          Prioridade
+          <select
+            value={createForm.priority}
+            onChange={(e) =>
+              setCreateForm((prev) => ({
+                ...prev,
+                priority: e.target.value as MaintenancePriority,
+              }))
+            }
+            className="surface-input mt-2"
+          >
+            <option value="baixa">Baixa</option>
+            <option value="média">Média</option>
+            <option value="alta">Alta</option>
+          </select>
+        </label>
+
+        <div className="pt-4">
+          <button type="submit" className="btn-primary w-full gap-2">
+            Criar manutenção
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
+
 
       {/* Modal de Atualização */}
       {selectedTask && (

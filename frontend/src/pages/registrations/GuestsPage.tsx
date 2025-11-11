@@ -29,6 +29,7 @@ type Guest = {
   amenities: string[];
   value?: string;
   notes?: string;
+  createdAt?: string; 
 };
 
 type Room = {
@@ -61,6 +62,17 @@ const maskPhone = (value: string): string => {
 
 // 💡 LISTA COMPLETA DE AMENIDADES PARA OS CHECKBOXES
 
+function formatDateToBR(dateStr: string): string {
+  if (!dateStr) return "";
+  const [year, month, day] = dateStr.split("-");
+  return `${day}/${month}/${year}`;
+}
+
+function getGuestSortKey(g: { createdAt?: string; checkIn?: string }) {
+  if (g.createdAt) return Date.parse(g.createdAt);
+  if (g.checkIn)  return Date.parse(g.checkIn);
+  return 0;
+}
 
 
 export default function GuestsPage() {
@@ -101,13 +113,17 @@ async function loadData() {
     const roomsData = await roomsRes.json();
 
     // ✅ Garante que cada hóspede tenha o número do quarto atualizado
-    const enrichedGuests = guestsData.map((g: any) => {
-      const room = roomsData.find((r: any) => r.id === g.roomId);
-      return {
-        ...g,
-        roomNumber: room ? room.identifier : g.roomNumber || "—",
-      };
-    });
+    const enrichedGuests = guestsData
+  .map((g: any) => {
+    const room = roomsData.find((r: any) => r.id === g.roomId);
+    return {
+      ...g,
+      roomNumber: room ? room.identifier : g.roomNumber || "—",
+    };
+  })
+  // 🆕 Ordena do mais recente → mais antigo
+  .sort((a: any, b: any) => getGuestSortKey(b) - getGuestSortKey(a));
+
 
     setGuests(enrichedGuests);
     setRooms(roomsData);
@@ -200,6 +216,12 @@ async function handleSave(e: FormEvent) {
     cpf: form.cpf?.replace(/\D/g, ""),
     phone: form.phone?.replace(/\D/g, ""),
   } as Guest;
+
+
+  // ⬇️ só define createdAt quando for NOVO
+  if (!isEditing) {
+    dataToSave.createdAt = new Date().toISOString();
+  }
 
   try {
     if (isEditing && dataToSave.id) {
@@ -376,52 +398,42 @@ async function handleDelete(guestToDelete: Guest) {
         {/* Tabela de Hóspedes */}
         <div className="hidden overflow-x-auto md:block">
           <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-800">
-            <thead className="surface-table-head">
-              <tr>
-                <th className="px-4 py-3">Nome</th>
-                <th className="px-4 py-3">CPF</th>
-                <th className="px-4 py-3">Quarto</th>
-                <th className="px-4 py-3">Check-in</th>
-                <th className="px-4 py-3">Check-out</th>
-                <th className="px-4 py-3 text-center">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 text-slate-700 dark:divide-slate-800 dark:text-slate-200">
-              {filteredGuests.map((g) => (
-                <tr key={g.id} className="surface-table-row">
-                  <td className="px-4 py-3 font-medium text-emphasis">
-                    {g.fullName}
-                  </td>
-                  <td className="px-4 py-3 text-muted-strong">
-                    {maskCPF(g.cpf) || "—"}
-                  </td>
-                  <td className="px-4 py-3 text-primary font-semibold">
-                    {g.roomNumber}
-                  </td>
-                  <td className="px-4 py-3 text-muted">
-                    {g.checkIn}
-                  </td>
-                  <td className="px-4 py-3 text-muted">
-                    {g.checkOut}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <button
-                      className="btn-secondary btn-sm"
-                      onClick={() => setSelectedGuest(g)}
-                    >
-                      Ver detalhes
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {filteredGuests.length === 0 && (
-                <tr>
-                    <td colSpan={6} className="py-4 text-center text-muted">
-                        Nenhum hóspede encontrado.
-                    </td>
-                </tr>
-              )}
-            </tbody>
+          <thead className="surface-table-head">
+  <tr>
+    <th className="px-4 py-3 text-left">Nome</th>
+    <th className="px-4 py-3 text-left">CPF</th>
+    <th className="px-4 py-3 text-left">E-mail</th>
+    <th className="px-4 py-3 text-left">Telefone</th>
+    <th className="px-4 py-3 text-left">Ações</th>
+  </tr>
+</thead>
+<tbody className="divide-y divide-slate-200 text-slate-700 dark:divide-slate-800 dark:text-slate-200">
+  {filteredGuests.map((g) => (
+    <tr key={g.id} className="surface-table-row">
+      <td className="px-4 py-3 font-medium text-emphasis">{g.fullName}</td>
+      <td className="px-4 py-3 text-muted-strong">{maskCPF(g.cpf) || "—"}</td>
+      <td className="px-4 py-3">{g.email || "—"}</td>
+      <td className="px-4 py-3">{maskPhone(g.phone || "") || "—"}</td>
+      <td className="px-4 py-3">
+        <button
+          className="btn-secondary btn-sm"
+          onClick={() => setSelectedGuest(g)}
+        >
+          Ver detalhes
+        </button>
+      </td>
+    </tr>
+  ))}
+  {filteredGuests.length === 0 && (
+    <tr>
+      <td colSpan={5} className="py-4 text-center text-muted">
+        Nenhum hóspede encontrado.
+      </td>
+    </tr>
+  )}
+</tbody>
+
+
           </table>
         </div>
 
@@ -444,7 +456,7 @@ async function handleDelete(guestToDelete: Guest) {
             </div>
              <div className="grid gap-1 text-xs text-muted-strong">
               <span>CPF: {maskCPF(g.cpf)}</span>
-              <span>Contato: {g.roomNumber}</span>
+              <span>Quarto: {g.roomNumber}</span>
                <span>E-mail: {g.email}</span>
  </div>
  </div>
@@ -483,182 +495,74 @@ async function handleDelete(guestToDelete: Guest) {
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="mt-6 grid grid-cols-6 gap-4">
-              {/* Nome completo */}
-              <label className="flex flex-col col-span-3">
-                <span className="text-sm mb-1">Nome completo</span>
-                <input
-                  name="fullName"
-                  className="surface-input"
-                  value={form.fullName || ""}
-                  onChange={handleFormChange}
-                  required
-                />
-              </label>
+            <form onSubmit={handleSave} className="mt-6 grid grid-cols-2 gap-4">
+  {/* Nome completo */}
+  <label className="flex flex-col col-span-2 md:col-span-1">
+    <span className="text-sm mb-1">Nome completo *</span>
+    <input
+      name="fullName"
+      className="surface-input"
+      value={form.fullName || ""}
+      onChange={handleFormChange}
+      required
+      placeholder="Digite o nome completo"
+    />
+  </label>
 
-              {/* CPF / Documento */}
-              <label className="flex flex-col col-span-3">
-                <span className="text-sm mb-1">CPF </span>
-                <input
-                  name="cpf"
-                  className="surface-input"
-                  value={maskCPF(form.cpf || "")}
-                  onChange={handleFormChange}
-                  placeholder="000.000.000-00"
-                />
-              </label>
+  {/* CPF */}
+  <label className="flex flex-col col-span-2 md:col-span-1">
+    <span className="text-sm mb-1">CPF *</span>
+    <input
+      name="cpf"
+      className="surface-input"
+      value={maskCPF(form.cpf || "")}
+      onChange={handleFormChange}
+      required
+      placeholder="000.000.000-00"
+    />
+  </label>
 
-              {/* E-mail */}
-              <label className="flex flex-col col-span-2">
-                <span className="text-sm mb-1">E-mail</span>
-                <input
-                  name="email"
-                  type="email"
-                  className="surface-input"
-                  value={form.email || ""}
-                  onChange={handleFormChange}
-                  placeholder="email@exemplo.com"
-                />
-              </label>
+  {/* E-mail */}
+  <label className="flex flex-col col-span-2 md:col-span-1">
+    <span className="text-sm mb-1">E-mail</span>
+    <input
+      name="email"
+      type="email"
+      className="surface-input"
+      value={form.email || ""}
+      onChange={handleFormChange}
+      placeholder="email@exemplo.com"
+    />
+  </label>
 
-              {/* Telefone */}
-              <label className="flex flex-col col-span-2">
-                <span className="text-sm mb-1">Telefone</span>
-                <input
-                  name="phone"
-                  className="surface-input"
-                  value={maskPhone(form.phone || "")}
-                  onChange={handleFormChange}
-                  placeholder="(00) 00000-0000"
-                />
-              </label>
-              
-              {/* Valor (R$) */}
-              <label className="flex flex-col col-span-2">
-                <span className="text-sm mb-1">Valor (R$)</span>
-                <input
-                  name="value"
-                  className="surface-input"
-                  value={form.value || ""}
-                  onChange={handleFormChange}
-                  placeholder="Ex: 150,00"
-                />
-              </label>
-              
-              {/* --- Separador de Reserva --- */}
-              <div className="col-span-6 border-t border-slate-200 pt-4 dark:border-slate-800 mt-2">
-                <p className="text-md font-bold text-emphasis mb-2">Detalhes da Reserva</p>
-              </div>
+  {/* Telefone */}
+  <label className="flex flex-col col-span-2 md:col-span-1">
+    <span className="text-sm mb-1">Telefone</span>
+    <input
+      name="phone"
+      className="surface-input"
+      value={maskPhone(form.phone || "")}
+      onChange={handleFormChange}
+      placeholder="(00) 00000-0000"
+    />
+  </label>
 
-              {/* Nº do quarto (FILTRADO) */}
-              <label className="flex flex-col col-span-2">
-                <span className="text-sm mb-1">Nº do quarto</span>
-                <select
-  name="roomId"
-  className="surface-input"
-  value={form.roomId || ""}
-  onChange={(e) => {
-    const room = rooms.find((r) => r.id === e.target.value);
-    setForm({
-      ...form,
-      roomId: e.target.value,
-      roomNumber: room?.identifier || "",
-    });
-  }}
-  required
->
-  <option value="">Selecione um quarto</option>
-
-  {availableRooms.map((r) => (
-    <option key={r.id} value={r.id}>
-      Quarto {r.identifier}
-      {isEditing && r.id === form.roomId ? " (Atual)" : ""}
-    </option>
-  ))}
-</select>
-
-              </label>
-
-              {/* Nº de pessoas */}
-              <label className="flex flex-col col-span-2">
-                <span className="text-sm mb-1">Nº de pessoas</span>
-                <input
-                  name="guests"
-                  type="number"
-                  className="surface-input"
-                  value={form.guests || 1}
-                  onChange={(e) =>
-                    setForm({ ...form, guests: Number(e.target.value) })
-                  }
-                  min="1"
-                  required
-                />
-              </label>
-
-              {/* Data de entrada */}
-              <label className="flex flex-col col-span-1">
-                <span className="text-sm mb-1">Check-in</span>
-                <input
-                  name="checkIn"
-                  type="date"
-                  className="surface-input"
-                  value={form.checkIn || ""}
-                  onChange={handleFormChange}
-                  required
-                />
-              </label>
-
-              {/* Data de saída */}
-              <label className="flex flex-col col-span-1">
-                <span className="text-sm mb-1">Check-out</span>
-                <input
-                  name="checkOut"
-                  type="date"
-                  className="surface-input"
-                  value={form.checkOut || ""}
-                  onChange={handleFormChange}
-                  required
-                />
-              </label>
-              
-
-              {/* Observações */}
-              <label className="flex flex-col col-span-6">
-                <span className="text-sm mb-1">Observações</span>
-                <textarea
-                  name="notes"
-                  className="surface-input min-h-[80px]"
-                  value={form.notes || ""}
-                  onChange={handleFormChange}
-                  placeholder="Notas internas sobre a estadia..."
-                />
-              </label>
-
-              <div className="col-span-6 flex justify-end gap-3 mt-4">
-  <button
-    type="button"
-    className="btn-secondary"
-    onClick={() => setIsModalOpen(false)}
-  >
-    Cancelar
-  </button>
-
-  {isEditing && (
+  <div className="col-span-2 flex justify-end gap-3 mt-4">
     <button
       type="button"
-        className="btn-primary"
-      onClick={handleGenerateNewReservation}
+      className="btn-secondary"
+      onClick={() => setIsModalOpen(false)}
     >
-      Gerar nova reserva
+      Cancelar
     </button>
-  )}
 
-  <button type="submit" className="btn-primary">
-    {isEditing ? "Salvar alterações" : "Salvar hóspede"}
-  </button>
-</div>
+    <button type="submit" className="btn-primary">
+      {isEditing ? "Salvar alterações" : "Salvar hóspede"}
+    </button>
+  </div>
+</form>
 
-            </form>
+
           </div>
         </div>
       )}
@@ -675,25 +579,13 @@ async function handleDelete(guestToDelete: Guest) {
             </div>
 
             <div className="space-y-3">
-              <h3 className="font-bold text-base text-emphasis">Dados Pessoais</h3>
-              <p><strong>Nome:</strong> {selectedGuest.fullName}</p>
-              <p><strong>CPF:</strong> {maskCPF(selectedGuest.cpf)}</p>
-              <p><strong>Email:</strong> {selectedGuest.email}</p>
-              <p><strong>Telefone:</strong> {maskPhone(selectedGuest.phone)}</p>
-              
-              <h3 className="font-bold text-base text-emphasis pt-3 border-t border-slate-200 dark:border-slate-700">Detalhes da Reserva</h3>
-              <p><strong>Quarto:</strong> {selectedGuest.roomNumber}</p>
-              <p><strong>Check-in:</strong> {selectedGuest.checkIn} | <strong>Check-out:</strong> {selectedGuest.checkOut}</p>
-              <p><strong>Pessoas:</strong> {selectedGuest.guests}</p>
-              <p><strong>Valor:</strong> R$ {selectedGuest.value || '0,00'}</p>
-              <p><strong>Objetos no Quarto:</strong> {selectedGuest.amenities?.join(", ") || "Nenhum"}</p>
-              
-              {selectedGuest.notes && (
-                  <p className="pt-3 border-t border-slate-200 dark:border-slate-700">
-                      <strong>Observações:</strong> {selectedGuest.notes}
-                  </p>
-              )}
-            </div>
+  <h3 className="font-bold text-base text-emphasis">Dados do hóspede</h3>
+  <p><strong>Nome:</strong> {selectedGuest.fullName}</p>
+  <p><strong>CPF:</strong> {maskCPF(selectedGuest.cpf)}</p>
+  <p><strong>E-mail:</strong> {selectedGuest.email || "—"}</p>
+  <p><strong>Telefone:</strong> {maskPhone(selectedGuest.phone || "") || "—"}</p>
+</div>
+
 
             <div className="flex justify-end gap-3 mt-6">
               <button
