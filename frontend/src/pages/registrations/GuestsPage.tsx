@@ -404,7 +404,7 @@ async function handleDelete(guestToDelete: Guest) {
     <th className="px-4 py-3 text-left">CPF</th>
     <th className="px-4 py-3 text-left">E-mail</th>
     <th className="px-4 py-3 text-left">Telefone</th>
-    <th className="px-4 py-3 text-left">Ações</th>
+    <th className="px-4 py-3 text-center">Ações</th>
   </tr>
 </thead>
 <tbody className="divide-y divide-slate-200 text-slate-700 dark:divide-slate-800 dark:text-slate-200">
@@ -414,9 +414,9 @@ async function handleDelete(guestToDelete: Guest) {
       <td className="px-4 py-3 text-muted-strong">{maskCPF(g.cpf) || "—"}</td>
       <td className="px-4 py-3">{g.email || "—"}</td>
       <td className="px-4 py-3">{maskPhone(g.phone || "") || "—"}</td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3 text-center">
         <button
-          className="btn-secondary btn-sm"
+          className="btn-secondary btn-sm "
           onClick={() => setSelectedGuest(g)}
         >
           Ver detalhes

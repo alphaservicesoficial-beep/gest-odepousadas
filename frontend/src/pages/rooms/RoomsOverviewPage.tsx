@@ -30,6 +30,20 @@ import {
     onSnapshot, 
 } from "firebase/firestore";
 
+import { Calendar } from "lucide-react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+
+import { ptBR } from "date-fns/locale";
+import { registerLocale } from "react-datepicker";
+
+import { format } from "date-fns";
+
+
+registerLocale("pt-BR", ptBR);
+
+
+
 // 🔹 Tipagem para hóspedes (Guest) e quartos (Room)
 type Guest = {
   id: string;
@@ -648,6 +662,13 @@ function RoomDetailsModal({
         return amenityIcons['cama'];
     };
 
+
+    
+
+
+
+    
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/70 p-4 backdrop-blur-sm">
             <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl transition-colors dark:border-slate-800 dark:bg-slate-950">
@@ -919,6 +940,35 @@ export default function RoomsOverviewPage() {
   const [guests, setGuests] = useState<Guest[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
 
+
+  // Datas padrão do check-in (hoje) e check-out (amanhã)
+const today = new Date().toISOString().split("T")[0];
+const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
+
+
+  // --- Estado do modal de Check-in ---
+const [isCheckinOpen, setIsCheckinOpen] = useState(false);
+const [checkinRoom, setCheckinRoom] = useState<Room | null>(null);
+
+// 🔹 Controle de etapas do check-in
+const [checkinStep, setCheckinStep] = useState(1);
+const totalCheckinSteps = 5;
+
+const nextStep = () => {
+  if (checkinStep < totalCheckinSteps) {
+    setCheckinStep(checkinStep + 1);
+  }
+};
+
+const prevStep = () => {
+  if (checkinStep > 1) {
+    setCheckinStep(checkinStep - 1);
+  }
+};
+
+
+
+
   const [typeFilter, setTypeFilter] = useState<string | undefined>();
   const [statusFilter, setStatusFilter] = useState<
     Room["status"] | undefined
@@ -953,23 +1003,102 @@ export default function RoomsOverviewPage() {
   const [createImages, setCreateImages] = useState<File[]>([]);
   
   
+
+const [checkinForm, setCheckinForm] = useState({
+  // 🔹 Dados do hóspede
+  hasGuestAccount: null as "sim" | "nao" | null,
+  guestName: "",
+  guestCPF: "",
+  guestEmail: "",
+  guestPhone: "",
+
+  // 🔹 Acompanhantes
+  hasCompanions: "nao" as "sim" | "nao",
+  companionsCount: 0,
+  companions: [] as { name: string; cpf: string }[],
+
+  // 🔹 Empresa vinculada
+hasCompany: "nao" as "sim" | "nao",          // se o hóspede está vinculado a uma empresa
+companyName: "",
+companyResponsible: "",
+companyCNPJ: "",
+companyEmail: "",
+companyPhone: "",
+hasCompanyAccount: null as "sim" | "nao" | null,
+searchCompany: "",                           // telefone da empresa
+
+  // 🔹 IDs de vínculo
+  selectedGuestId: null as string | null,
+  selectedCompanyId: null as string | null,
+
+  // 🔹 Dados de estadia
+// Datas já preenchidas automaticamente
+checkInDate: new Date().toISOString().split("T")[0],
+checkOutDate: (() => {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return tomorrow.toISOString().split("T")[0];
+})(),
+
+  notes: "",
+  searchGuest: "",
+});
+
+const updateCompanion = (index: number, field: "name" | "cpf", value: string) => {
+  setCheckinForm((prev) => {
+    const updated = [...prev.companions];
+
+    updated[index] = {
+      ...updated[index],
+      [field]: value,
+    };
+
+    return { ...prev, companions: updated };
+  });
+};
+
+
+
+// 🔹 Converte dd/mm/aaaa → yyyy-mm-dd (para usar no input type="date")
+function maskDateBR(value: string) {
+  return value
+    .replace(/\D/g, "")
+    .replace(/(\d{2})(\d)/, "$1/$2")
+    .replace(/(\d{2})(\d)/, "$1/$2")
+    .slice(0, 10);
+}
+
+function toBR(date: string) {
+  if (!date) return "";
+  const [yyyy, mm, dd] = date.split("-");
+  return `${dd}/${mm}/${yyyy}`;
+}
+
+function toISO(date: string) {
+  if (!date) return "";
+  const parts = date.split("/");
+  if (parts.length !== 3) return "";
+  const [dd, mm, yyyy] = parts;
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+
+
+
+
+
+  
   // 🔹 Controle de Scroll do Body (CORREÇÃO DO BUG)
   useEffect(() => {
-    // Verifica se algum modal está aberto
-    const isModalOpen = selectedRoom || maintenanceRoom || isCreateModalOpen || editingRoom;
-
-    if (isModalOpen) {
-      document.body.classList.add('overflow-hidden');
-    } else {
-      document.body.classList.remove('overflow-hidden');
-    }
-
-    // Função de limpeza para garantir que a classe seja removida ao desmontar
-    return () => {
-      document.body.classList.remove('overflow-hidden');
-    };
-  }, [selectedRoom, maintenanceRoom, isCreateModalOpen, editingRoom]);
-
+    const anyModalOpen =
+      selectedRoom || maintenanceRoom || isCreateModalOpen || editingRoom || isCheckinOpen;
+  
+    if (anyModalOpen) document.body.classList.add('overflow-hidden');
+    else document.body.classList.remove('overflow-hidden');
+  
+    return () => document.body.classList.remove('overflow-hidden');
+  }, [selectedRoom, maintenanceRoom, isCreateModalOpen, editingRoom, isCheckinOpen]);
+  
 
   // 🔹 Função para recarregar apenas os quartos após uma mudança (Mantida)
   async function reloadRooms() {
@@ -1233,6 +1362,58 @@ setEditingRoom(null);
   };
 
 
+  const handleCheckinSubmit = async () => {
+  if (!checkinRoom) return;
+
+  try {
+    const response = await fetch(
+      `${baseUrl}/rooms/${checkinRoom.id}/checkin`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          // info do quarto
+          roomId: checkinRoom.id,
+          roomNumber: checkinRoom.identifier,
+
+          // todo o formulário de check-in
+          ...checkinForm,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      let detail = "Erro ao realizar check-in.";
+      try {
+        const err = await response.json();
+        if (err?.detail) detail = err.detail;
+      } catch {
+        // ignora
+      }
+      throw new Error(detail);
+    }
+
+    // Se quiser pegar o reservationId:
+    // const data = await response.json();
+    // console.log("Reserva criada:", data.reservationId);
+
+    // Atualiza os quartos na tela (para refletir 'ocupado')
+    await reloadRooms();
+
+    // Fecha modal e reseta etapa
+    setIsCheckinOpen(false);
+    setCheckinRoom(null);
+    setCheckinStep(1);
+
+    alert("✅ Check-in realizado com sucesso!");
+  } catch (error) {
+    console.error(error);
+    alert("Erro ao realizar check-in. Tente novamente.");
+  }
+};
+
+
+
   return (
     <div className="space-0">
       <Card
@@ -1391,12 +1572,35 @@ setEditingRoom(null);
         <button
   className="btn-outline-success btn-sm flex-auto uppercase tracking-wide"
   onClick={() => {
-    // Ainda sem funcionalidade
-    console.log(`Check-in clicado para o quarto ${room.identifier}`);
+    setCheckinRoom(room);
+     setCheckinStep(1);
+    setCheckinForm((prev) => ({
+      ...prev,
+      hasGuestAccount: null, // 👈 antes era hasg
+      guestName: "",
+      guestCPF: "",
+      guestEmail: "",
+      guestPhone: "",
+      hasCompanions: "nao",
+      companionsCount: 0,
+      companions: [],
+      hasCompany: "nao",
+      selectedGuestId: null,
+      selectedCompanyId: null,
+      checkInDate: toBR(today),
+      checkOutDate: toBR(tomorrow),
+
+      notes: "",
+    }));
+    
+    setIsCheckinOpen(true);
   }}
+  
 >
   Check-in
 </button>
+
+
 
 
       </div>
@@ -1431,6 +1635,777 @@ setEditingRoom(null);
           ALL_AMENITIES={ALL_AMENITIES}
           ROOM_TYPES={ROOM_TYPES}
       />
+
+
+{isCheckinOpen && checkinRoom && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-6 backdrop-blur-sm">
+    <div className="w-full max-w-5xl rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-2xl dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
+      {/* Cabeçalho */}
+      <div className="flex items-start justify-between p-6 border-b border-slate-200 dark:border-slate-800">
+        <div>
+          <h2 className="text-lg font-semibold text-emphasis">
+            Check-in — Quarto {checkinRoom.identifier}
+          </h2>
+          <p className="text-sm text-muted">
+            Preencha as informações do hóspede para realizar o check-in.
+          </p>
+          {/* 🔹 Indicador da etapa */}
+<div className="mt-2 text-sm text-muted font-medium">
+ Etapa {checkinStep} de {totalCheckinSteps}
+
+</div>
+
+        </div>
+        <button
+          type="button"
+          onClick={() => { setIsCheckinOpen(false); setCheckinRoom(null); }}
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-primary hover:text-primary dark:border-slate-800 dark:text-slate-300"
+          aria-label="Fechar modal"
+        >
+          <X className="h-4 w-4" aria-hidden="true" />
+        </button>
+      </div>
+
+
+{/* CONTEÚDO DAS ETAPAS */}
+<div className="mt-5 px-6 ">
+
+
+
+
+
+  {/* ETAPA 1 — Hóspedes */}
+{checkinStep === 1 && (
+  <div className="space-y-6">
+    {/* 🔹 Pergunta: Já tem cadastro? */}
+    <div>
+      <label className="block text-sm font-medium text-muted-strong mb-2">
+        Já tem cadastro?
+      </label>
+
+      <div className="flex gap-4">
+        {/* SIM */}
+        <label className="flex items-center gap-2">
+          <input
+            type="radio"
+            name="hasGuestAccount"
+            value="sim"
+            checked={checkinForm.hasGuestAccount === "sim"}
+            onChange={(e) =>
+              setCheckinForm((prev) => ({
+                ...prev,
+                hasGuestAccount: "sim",
+              }))
+            }
+          />
+          <span>Sim</span>
+        </label>
+
+        {/* NÃO */}
+        <label className="flex items-center gap-2">
+          <input
+            type="radio"
+            name="hasGuestAccount"
+            value="nao"
+            checked={checkinForm.hasGuestAccount === "nao"}
+            onChange={(e) =>
+              setCheckinForm((prev) => ({
+                ...prev,
+                hasGuestAccount: "nao",
+              }))
+            }
+          />
+          <span>Não</span>
+        </label>
+      </div>
+    </div>
+
+    {/* 🔹 Se JÁ tem cadastro → campo de busca */}
+    {checkinForm.hasGuestAccount === "sim" && (
+      <div>
+        <label className="block text-sm font-medium text-muted-strong mb-2">
+          Buscar hóspede cadastrado
+        </label>
+        <input
+          type="text"
+          placeholder="Digite o nome ou CPF..."
+          className="surface-input w-full"
+          value={checkinForm.searchGuest || ""}
+          onChange={(e) =>
+            setCheckinForm((prev) => ({
+              ...prev,
+              searchGuest: e.target.value,
+            }))
+          }
+        />
+        {/* depois aqui entra o autocomplete / lista de resultados */}
+      </div>
+    )}
+
+    {/* 🔹 Se NÃO tem cadastro → formulário de novo hóspede */}
+    {checkinForm.hasGuestAccount === "nao" && (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Nome completo */}
+        <label className="flex flex-col space-y-2">
+          <span className="text-sm font-medium">Nome completo *</span>
+          <input
+            type="text"
+            name="guestName"
+            required
+            className="surface-input"
+            placeholder="Ex: João Pereira"
+            value={checkinForm.guestName}
+            onChange={(e) =>
+              setCheckinForm((prev) => ({
+                ...prev,
+                guestName: e.target.value,
+              }))
+            }
+          />
+        </label>
+
+        {/* CPF */}
+        <label className="flex flex-col space-y-2">
+          <span className="text-sm font-medium">CPF *</span>
+          <input
+            type="text"
+            name="guestCPF"
+            required
+            className="surface-input"
+            placeholder="000.000.000-00"
+            value={checkinForm.guestCPF}
+            onChange={(e) =>
+              setCheckinForm((prev) => ({
+                ...prev,
+                guestCPF: e.target.value,
+              }))
+            }
+          />
+        </label>
+
+        {/* E-mail */}
+        <label className="flex flex-col space-y-2">
+          <span className="text-sm font-medium">E-mail</span>
+          <input
+            type="email"
+            name="guestEmail"
+            className="surface-input"
+            placeholder="contato@exemplo.com"
+            value={checkinForm.guestEmail}
+            onChange={(e) =>
+              setCheckinForm((prev) => ({
+                ...prev,
+                guestEmail: e.target.value,
+              }))
+            }
+          />
+        </label>
+
+        {/* Telefone */}
+        <label className="flex flex-col space-y-2">
+          <span className="text-sm font-medium">Telefone</span>
+          <input
+            type="text"
+            name="guestPhone"
+            className="surface-input"
+            placeholder="(00) 00000-0000"
+            value={checkinForm.guestPhone}
+            onChange={(e) =>
+              setCheckinForm((prev) => ({
+                ...prev,
+                guestPhone: e.target.value,
+              }))
+            }
+          />
+        </label>
+      </div>
+    )}
+  </div>
+)}
+
+
+  {/* ETAPA 2 — Acompanhantes */}
+  {checkinStep === 2 && (
+  <div className="space-y-6">
+
+    <h3 className="text-md font-semibold">Acompanhantes</h3>
+
+    {/* Possui acompanhantes? */}
+    <div className="space-y-2">
+      <label className="text-sm font-medium text-muted-strong">
+        Possui acompanhantes?
+      </label>
+
+      <div className="flex gap-4">
+        {/* SIM */}
+        <label className="flex items-center gap-2">
+          <input
+            type="radio"
+            name="hasCompanions"
+            value="sim"
+            checked={checkinForm.hasCompanions === "sim"}
+            onChange={() =>
+              setCheckinForm((prev) => ({
+                ...prev,
+                hasCompanions: "sim",
+              }))
+            }
+          />
+          <span>Sim</span>
+        </label>
+
+        {/* NÃO */}
+        <label className="flex items-center gap-2">
+          <input
+            type="radio"
+            name="hasCompanions"
+            value="nao"
+            checked={checkinForm.hasCompanions === "nao"}
+            onChange={() =>
+              setCheckinForm((prev) => ({
+                ...prev,
+                hasCompanions: "nao",
+                companionsCount: 0,
+                companions: [],
+              }))
+            }
+          />
+          <span>Não</span>
+        </label>
+      </div>
+    </div>
+
+    {/* Quantidade de acompanhantes */}
+    {checkinForm.hasCompanions === "sim" && (
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-muted-strong">
+          Quantidade de acompanhantes
+        </label>
+
+        <input
+          type="number"
+          min="1"
+          className="surface-input w-full"
+          placeholder="Ex: 2"
+          value={checkinForm.companionsCount || ""}
+          onChange={(e) => {
+            const rawValue = e.target.value;
+            const count = rawValue === "" ? 0 : parseInt(rawValue);
+
+            const companions = Array.from({ length: count }, (_, i) => ({
+              name: checkinForm.companions[i]?.name || "",
+              cpf: checkinForm.companions[i]?.cpf || "",
+            }));
+
+            setCheckinForm((prev) => ({
+              ...prev,
+              companionsCount: count,
+              companions,
+            }));
+          }}
+        />
+      </div>
+    )}
+
+    {/* Campos dos acompanhantes */}
+    {checkinForm.hasCompanions === "sim" &&
+      checkinForm.companions.map((companion, index) => (
+        <div
+  key={index}
+  className="grid grid-cols-1 md:grid-cols-2 gap-4"
+>
+  <div>
+    <label className="text-sm font-medium">
+      Nome do acompanhante {index + 1}
+    </label>
+    <input
+      type="text"
+      className="surface-input mt-1"
+      value={checkinForm.companions[index]?.name || ""}
+      onChange={(e) =>
+        updateCompanion(index, "name", e.target.value)
+      }
+      placeholder={`Nome do acompanhante ${index + 1}`}
+    />
+  </div>
+
+  <div>
+    <label className="text-sm font-medium">CPF</label>
+    <input
+      type="text"
+      className="surface-input mt-1"
+      value={checkinForm.companions[index]?.cpf || ""}
+      onChange={(e) =>
+        updateCompanion(index, "cpf", e.target.value)
+      }
+      placeholder="000.000.000-00"
+    />
+  </div>
+</div>
+
+      ))}
+  </div>
+)}
+
+ 
+ {checkinStep === 3 && (
+  <div>
+    <h3 className="text-md font-semibold mb-4">Datas do check-in</h3>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+      {/* Check-in */}
+ <div className="relative w-full">
+  
+  {/* Input de texto visível (dd/mm/yyyy) */}
+  <input
+    type="text"
+    placeholder="dd/mm/yyyy"
+    className="surface-input pr-10"
+    value={checkinForm.checkInDate}
+    onChange={(e) =>
+      setCheckinForm((prev) => ({
+        ...prev,
+        checkInDate: maskDateBR(e.target.value),
+      }))
+    }
+  />
+
+  {/* Ícone do calendário */}
+  <Calendar
+    size={18}
+    className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-500 pointer-events-none"
+  />
+
+  {/* Input DATE invisível para abrir o calendário */}
+  <input
+    type="date"
+    className="absolute inset-0 opacity-0 cursor-pointer"
+    value={toISO(checkinForm.checkInDate)} // conversão BR → ISO
+    onChange={(e) =>
+      setCheckinForm((prev) => ({
+        ...prev,
+        checkInDate: toBR(e.target.value), // ISO → BR
+      }))
+    }
+  />
+
+</div>
+
+
+{/* CHECK-OUT */}
+<div className="relative w-full">
+  
+  <input
+    type="text"
+    placeholder="dd/mm/yyyy"
+    className="surface-input pr-10"
+    value={checkinForm.checkOutDate}
+    onChange={(e) =>
+      setCheckinForm((prev) => ({
+        ...prev,
+        checkOutDate: maskDateBR(e.target.value),
+      }))
+    }
+  />
+
+  <Calendar
+    size={18}
+    className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-500 pointer-events-none"
+  />
+
+  <input
+    type="date"
+    className="absolute inset-0 opacity-0 cursor-pointer"
+    value={toISO(checkinForm.checkOutDate)}
+    onChange={(e) =>
+      setCheckinForm((prev) => ({
+        ...prev,
+        checkOutDate: toBR(e.target.value),
+      }))
+    }
+  />
+
+</div>
+
+
+
+    </div>
+  </div>
+)}
+
+
+
+
+  {checkinStep === 4 && (
+  <div className="space-y-6">
+
+    {/* PERGUNTA PRINCIPAL */}
+    <div>
+      <label className="block text-sm font-medium mb-2">
+        Vincular a uma empresa?
+      </label>
+
+      <div className="flex gap-6">
+        <label className="flex items-center gap-2">
+          <input
+            type="radio"
+            name="hasCompany"
+            value="sim"
+            checked={checkinForm.hasCompany === "sim"}
+            onChange={() =>
+              setCheckinForm((prev) => ({
+                ...prev,
+                hasCompany: "sim",
+                hasCompanyAccount: null,
+                selectedCompanyId: null,
+              }))
+            }
+          />
+          <span>Sim</span>
+        </label>
+
+        <label className="flex items-center gap-2">
+          <input
+            type="radio"
+            name="hasCompany"
+            value="nao"
+            checked={checkinForm.hasCompany === "nao"}
+            onChange={() =>
+              setCheckinForm((prev) => ({
+                ...prev,
+                hasCompany: "nao",
+                hasCompanyAccount: null,
+                selectedCompanyId: null,
+              }))
+            }
+          />
+          <span>Não</span>
+        </label>
+      </div>
+    </div>
+
+    {/* SE NÃO TEM EMPRESA → nada mais aparece */}
+    {checkinForm.hasCompany === "nao" && (
+      <p className="text-sm text-muted">Nenhuma empresa será vinculada.</p>
+    )}
+
+    {/* SE TEM EMPRESA → PERGUNTA SE TEM CADASTRO */}
+    {checkinForm.hasCompany === "sim" && (
+      <div>
+        <label className="block text-sm font-medium mb-2">
+          A empresa já possui cadastro?
+        </label>
+
+        <div className="flex gap-6">
+          <label className="flex items-center gap-2">
+            <input
+              type="radio"
+              name="hasCompanyAccount"
+              value="sim"
+              checked={checkinForm.hasCompanyAccount === "sim"}
+              onChange={() =>
+                setCheckinForm((prev) => ({
+                  ...prev,
+                  hasCompanyAccount: "sim",
+                }))
+              }
+            />
+            <span>Sim</span>
+          </label>
+
+          <label className="flex items-center gap-2">
+            <input
+              type="radio"
+              name="hasCompanyAccount"
+              value="nao"
+              checked={checkinForm.hasCompanyAccount === "nao"}
+              onChange={() =>
+                setCheckinForm((prev) => ({
+                  ...prev,
+                  hasCompanyAccount: "nao",
+                }))
+              }
+            />
+            <span>Não</span>
+          </label>
+        </div>
+      </div>
+    )}
+
+    {/* BUSCA DE EMPRESA */}
+    {checkinForm.hasCompany === "sim" &&
+      checkinForm.hasCompanyAccount === "sim" && (
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            Buscar empresa
+          </label>
+
+          <input
+            type="text"
+            className="surface-input w-full"
+            placeholder="Digite o nome ou CNPJ..."
+            value={checkinForm.searchCompany || ""}
+            onChange={(e) =>
+              setCheckinForm((prev) => ({
+                ...prev,
+                searchCompany: e.target.value,
+              }))
+            }
+          />
+
+          {/* Aqui futuramente entra o autocomplete */}
+        </div>
+      )}
+
+    {/* FORMULÁRIO COMPLETO DE NOVA EMPRESA */}
+    {checkinForm.hasCompany === "sim" &&
+      checkinForm.hasCompanyAccount === "nao" && (
+        <div className="grid gap-6">
+
+          {/* Linha 1 */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <label className="block text-sm font-medium">
+              Razão Social *
+              <input
+                className="surface-input mt-2"
+                value={checkinForm.companyName || ""}
+                onChange={(e) =>
+                  setCheckinForm((prev) => ({
+                    ...prev,
+                    companyName: e.target.value,
+                  }))
+                }
+                placeholder="Ex.: Pousada Flor do Sol"
+              />
+            </label>
+
+            <label className="block text-sm font-medium">
+              Responsável *
+              <input
+                className="surface-input mt-2"
+                value={checkinForm.companyResponsible || ""}
+                onChange={(e) =>
+                  setCheckinForm((prev) => ({
+                    ...prev,
+                    companyResponsible: e.target.value,
+                  }))
+                }
+                placeholder="Nome da pessoa responsável"
+              />
+            </label>
+          </div>
+
+          {/* Linha 2 */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <label className="block text-sm font-medium">
+              CNPJ *
+              <input
+                className="surface-input mt-2"
+                value={checkinForm.companyCNPJ || ""}
+                onChange={(e) =>
+                  setCheckinForm((prev) => ({
+                    ...prev,
+                    companyCNPJ: e.target.value,
+                  }))
+                }
+                placeholder="00.000.000/0000-00"
+              />
+            </label>
+
+            <label className="block text-sm font-medium">
+              E-mail
+              <input
+                className="surface-input mt-2"
+                value={checkinForm.companyEmail || ""}
+                onChange={(e) =>
+                  setCheckinForm((prev) => ({
+                    ...prev,
+                    companyEmail: e.target.value,
+                  }))
+                }
+                placeholder="contato@empresa.com"
+              />
+            </label>
+          </div>
+
+          {/* Linha 3 */}
+          <label className="block text-sm font-medium">
+            Telefone
+            <input
+              className="surface-input mt-2"
+              value={checkinForm.companyPhone || ""}
+              onChange={(e) =>
+                setCheckinForm((prev) => ({
+                  ...prev,
+                  companyPhone: e.target.value,
+                }))
+              }
+              placeholder="(00) 00000-0000"
+            />
+          </label>
+
+        </div>
+      )}
+  </div>
+)}
+
+{checkinStep === 5 && (
+  <div className="space-y-6">
+
+    {/* CAMPO DE OBSERVAÇÕES — PEQUENO */}
+    <div>
+      <label className="block text-sm font-medium mb-1">
+        Observações
+      </label>
+
+      <textarea
+        className="surface-input w-full h-16 resize-none text-sm"
+        placeholder="Digite alguma observação..."
+        value={checkinForm.notes}
+        onChange={(e) =>
+          setCheckinForm((prev) => ({
+            ...prev,
+            notes: e.target.value,
+          }))
+        }
+      />
+    </div>
+
+    {/* RESUMO — COMPACTO */}
+    <div className="rounded-lg border border-slate-300 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-900/40">
+      <h4 className="font-semibold mb-2 text-sm">Resumo do check-in</h4>
+
+      <div className="space-y-2 text-sm">
+
+        {/* Hóspede */}
+        <div>
+          <strong>Hóspede:</strong>
+          <p>
+            {checkinForm.hasGuestAccount === "sim"
+              ? "Selecionado via busca"
+              : checkinForm.guestName || "—"}
+          </p>
+        </div>
+
+        {/* CPF */}
+        <div>
+          <strong>CPF:</strong>
+          <p>
+            {checkinForm.hasGuestAccount === "sim"
+              ? "(via cadastro)"
+              : checkinForm.guestCPF || "—"}
+          </p>
+        </div>
+
+        {/* Datas */}
+        <div>
+          <strong>Datas:</strong>
+          <p>
+            Entrada: {checkinForm.checkInDate} <br />
+            Saída: {checkinForm.checkOutDate}
+          </p>
+        </div>
+
+        {/* Acompanhantes */}
+        <div>
+          <strong>Acompanhantes:</strong>
+          <p>
+            {checkinForm.hasCompanions === "nao"
+              ? "Nenhum"
+              : `${checkinForm.companionsCount} acompanhante(s)`}
+          </p>
+        </div>
+
+        {/* Empresa */}
+        <div>
+          <strong>Empresa vinculada:</strong>
+          <p>
+            {checkinForm.hasCompany === "nao"
+              ? "Não vinculado"
+              : checkinForm.hasCompanyAccount === "sim"
+              ? "Empresa selecionada via busca"
+              : checkinForm.companyName || "—"}
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+)}
+
+
+
+</div>
+
+
+
+        {/* Rodapé com ações desabilitadas por enquanto */}
+
+{/* RODAPÉ DO MODAL */}
+<div className="mt-6 flex justify-between items-center border-t border-slate-200 pt-7 px-6 pb-5 dark:border-slate-800">
+
+  {/* Botão Voltar (aparece a partir da etapa 2) */}
+  {checkinStep > 1 ? (
+    <button
+      type="button"
+      className="btn-secondary"
+      onClick={prevStep}
+    >
+      Voltar
+    </button>
+  ) : (
+    <div></div> /* espaço vazio para alinhar */
+  )}
+
+  {/* Botões à direita */}
+  <div className="flex gap-3">
+
+    {/* Cancelar sempre aparece */}
+    <button
+      type="button"
+      className="btn-secondary"
+      onClick={() => {
+        setIsCheckinOpen(false);
+        setCheckinRoom(null);
+        setCheckinStep(1);
+      }}
+    >
+      Cancelar
+    </button>
+
+    {/* Botão avançar (etapas 1 a 4) */}
+    {checkinStep < totalCheckinSteps && (
+      <button
+        type="button"
+        className="btn-primary"
+        onClick={nextStep}
+      >
+        Próximo
+      </button>
+    )}
+
+    {/* Botão finalizar na etapa 5 */}
+    {checkinStep === totalCheckinSteps && (
+  <button
+    type="button"
+    className="btn-primary"
+    onClick={handleCheckinSubmit}
+  >
+    Fazer check-in
+  </button>
+)}
+
+  </div>
+
+</div>
+
+
+    </div>
+
+      </div>
+
+)},
 
       {/* ... (Modal de Criação - O código abaixo está inalterado e pendente) ... */}
       {isCreateModalOpen && (

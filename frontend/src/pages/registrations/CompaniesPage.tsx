@@ -215,12 +215,8 @@ async function handleSave(e: FormEvent) {
   if (!isEditing) {
     dataToSave.createdAt = new Date().toISOString();
   }
-  
 
   try {
-    // ====================================================
-    // 1️⃣ SALVAR / ATUALIZAR EMPRESA
-    // ====================================================
     if (isEditing && dataToSave.id) {
       await fetch(`${baseUrl}/companies/${dataToSave.id}`, {
         method: "PUT",
@@ -239,17 +235,22 @@ async function handleSave(e: FormEvent) {
       }
     }
 
-    // ====================================================
-    // 2️⃣ ATUALIZAR STATUS DOS QUARTOS (LIBERAR / RESERVAR)
-    // ====================================================
-    const oldCompany = companies.find((c) => c.id === dataToSave.id);
-    
-    // fecha a função aqui 👇
+    // ✅ Atualiza lista e fecha modal automaticamente
+    await loadCompanies();
+    setIsModalOpen(false);
+    setIsEditing(false);
+    resetForm();
+
   } catch (error) {
     console.error("Erro ao salvar empresa:", error);
   }
-} // <-- ESSA CHAVE FECHA handleSave
+}
 
+
+    // ====================================================
+    // 2️⃣ ATUALIZAR STATUS DOS QUARTOS (LIBERAR / RESERVAR)
+    // ====================================================
+    
 // e aqui começa a outra função fora dela
 async function handleGenerateNewReservation() {
   if (!form.id) {
@@ -324,110 +325,116 @@ async function handleGenerateNewReservation() {
     // --- Renderização ---
     return (
       <div className="space-y-0 relative">
-        <Card
-          title="Cadastros de Empresas"
-          description="Mantenha os registros das empresas e parcerias corporativas."
-          headerAction={
-            <button className="btn-primary gap-2" onClick={openCreateModal}>
-              <PlusCircle size={18} />
-              Nova empresa
-            </button>
-          }
-        >
-         
-
- <div className="mb-4 flex items-center gap-3">
-  <div className="flex items-center gap-2 surface-input w-full px-3">
-    <Search size={16} className="text-muted" />
-    <input
-      type="search"
-      placeholder="Pesquisar empresa por nome, responsável ou CNPJ..."
-      className="bg-transparent outline-none flex-1"
-      value={searchTerm}
-      onChange={(e) => setSearchTerm(e.target.value)}
-    />
+       
+  <Card
+  title="Cadastros de Empresas"
+  description="Mantenha os registros das empresas e parcerias corporativas."
+  headerAction={
+    <button className="btn-primary gap-2" onClick={openCreateModal}>
+      <PlusCircle size={18} />
+      Nova empresa
+    </button>
+  }
+>
+  {/* 🔍 Campo de busca */}
+  <div className="mb-4 flex items-center gap-3">
+    <div className="flex items-center gap-2 surface-input w-full px-3">
+      <Search size={16} className="text-muted" />
+      <input
+        type="search"
+        placeholder="Pesquisar empresa por nome, responsável ou CNPJ..."
+        className="bg-transparent outline-none flex-1"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+    </div>
   </div>
-</div>
-          {/* Tabela Desktop */}
-          <div className="hidden overflow-x-auto md:block">
-            <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-800">
-              <thead className="surface-table-head">
-                <tr>
-                  <th className="px-4 py-3">Empresa (Razão Social)</th>
-            <th className="px-4 py-3">Responsável</th>
-                  <th className="px-4 py-3">CNPJ</th>
-        
-                  <th className="px-4 py-3">Telefone</th>
-                  <th className="px-4 py-3 text-center">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 text-slate-700 dark:divide-slate-800 dark:text-slate-200">
-                {filteredCompanies.map((company) => (
-                  <tr key={company.id} className="surface-table-row">
-                    <td className="px-4 py-3 font-medium text-emphasis">
-                      {company.name}
-                    </td>
-  <td className="px-4 py-3 text-muted-strong">
-                      {company.responsible}
-                    </td>
-                    <td className="px-4 py-3 text-muted-strong">
-                      {maskCNPJ(company.cnpj)}
-                    </td>
-                    
-                    
-                    <td className="px-4 py-3 text-center">
-                      <button
-                        className="btn-secondary btn-sm"
-                        onClick={() => setSelectedCompany(company)}
-                      >
-                        Ver detalhes
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {filteredCompanies.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="py-4 text-center text-muted">
-                      Nenhuma empresa encontrada.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-          
-          {/* Lista Mobile */}
-          <div className="space-y-3 md:hidden">
-              {filteredCompanies.map((company) => (
-                  <div
-                      key={company.id}
-                      className="surface-toolbar flex flex-col gap-2 p-4"
-                  >
-                      <div className="flex items-center justify-between">
-                          <p className="text-emphasis">{company.name}</p>
-                          <button
-                              className="btn-secondary btn-sm"
-                              onClick={() => setSelectedCompany(company)}
-                          >
-                              Ver detalhes
-                          </button>
-                      </div>
-                      <div className="grid gap-1 text-xs text-muted-strong">
-                          <span>CNPJ: {maskCNPJ(company.cnpj)}</span>
-                          <span>Contato: {company.responsible}</span>
-                          <span>E-mail: {company.email}</span>
-                      </div>
-                  </div>
-              ))}
-              {filteredCompanies.length === 0 && (
-                  <div className="py-4 text-center text-muted">
-                      Nenhuma empresa encontrada.
-                  </div>
-              )}
-          </div>
-        </Card>
+
+  {/* 💻 Tabela Desktop */}
+  <div className="hidden overflow-x-auto md:block">
+    <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-800">
+      <thead className="surface-table-head">
+        <tr>
+          <th className="px-3 py-1.5 text-left w-[30%]">Empresa (Razão Social)</th>
+          <th className="px-3 py-1.5 text-left w-[25%]">Responsável</th>
+          <th className="px-3 py-1.5 text-left w-[20%]">CNPJ</th>
+          <th className="px-3 py-1.5 text-left w-[15%]">Telefone</th>
+          <th className="px-3 py-1.5 text-center w-[10%]">Ações</th>
+        </tr>
+      </thead>
+
+      <tbody className="divide-y divide-slate-200 text-slate-700 dark:divide-slate-800 dark:text-slate-200">
+        {filteredCompanies.map((company) => (
+          <tr key={company.id} className="surface-table-row hover:bg-slate-100/5 transition-colors">
+            <td className="px-3 py-2 font-medium text-emphasis text-left">
+              {company.name}
+            </td>
+            <td className="px-3 py-2 text-muted-strong text-left">
+              {company.responsible}
+            </td>
+            <td className="px-3 py-2 text-muted-strong text-left">
+              {maskCNPJ(company.cnpj)}
+            </td>
+            <td className="px-3 py-2 text-muted-strong text-left">
+              {maskPhone(company.phone || "")}
+            </td>
+            <td className="px-2 py-2 text-center">
+              <button
+                className="btn-secondary btn-sm"
+                onClick={() => setSelectedCompany(company)}
+              >
+                Ver detalhes
+              </button>
+            </td>
+          </tr>
+        ))}
+
+        {filteredCompanies.length === 0 && (
+          <tr>
+            <td colSpan={5} className="py-4 text-center text-muted">
+              Nenhuma empresa encontrada.
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  </div>
+
+  {/* 📱 Lista Mobile */}
+  <div className="space-y-3 md:hidden">
+    {filteredCompanies.map((company) => (
+      <div
+        key={company.id}
+        className="surface-toolbar flex flex-col gap-2 p-4"
+      >
+        <div className="flex items-center justify-between">
+          <p className="text-emphasis font-medium">{company.name}</p>
+          <button
+            className="btn-secondary btn-sm"
+            onClick={() => setSelectedCompany(company)}
+          >
+            Ver detalhes
+          </button>
+        </div>
+        <div className="grid gap-1 text-xs text-muted-strong">
+          <span>CNPJ: {maskCNPJ(company.cnpj)}</span>
+          <span>Contato: {company.responsible}</span>
+          <span>Telefone: {maskPhone(company.phone || "")}</span>
+          <span>E-mail: {company.email || "-"}</span>
+        </div>
+      </div>
+    ))}
+
+    {filteredCompanies.length === 0 && (
+      <div className="py-4 text-center text-muted">
+        Nenhuma empresa encontrada.
+      </div>
+    )}
+  </div>
+</Card>
+
   
-        {/* Modal de criar/editar: AGORA LARGO E COM QUARTOS FILTRADOS */}
+       {/* Modal de criar/editar: AGORA LARGO E COM QUARTOS FILTRADOS */}
         {isModalOpen && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/70 p-6 backdrop-blur-sm">
             {/* 💡 LARGURA DO MODAL DEFINIDA AQUI: max-w-3xl */}
@@ -540,15 +547,7 @@ async function handleGenerateNewReservation() {
     Cancelar
   </button>
 
-  {isEditing && (
-    <button
-      type="button"
-      className="btn-primary"
-      onClick={handleGenerateNewReservation}
-    >
-      Gerar nova reserva
-    </button>
-  )}
+  
 
   <button type="submit" className="btn-primary">
     {isEditing ? "Salvar alterações" : "Salvar empresa"}
