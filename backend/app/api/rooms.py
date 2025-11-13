@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Body
 from app.core.firebase import db
+from google.cloud import firestore 
 
 # função para mudar status de um quarto
 def update_room_status(room_id: str, new_status: str):
@@ -66,97 +67,76 @@ def change_room_status(room_id: str, payload: dict):
 @router.post("/rooms/{room_id}/checkin")
 def checkin_room(room_id: str, payload: dict = Body(...)):
     """
-    Cria uma reserva vinculada ao quarto e marca o check-in como concluído.
+    Faz o check-in direto pelo quarto:
+    - cria uma reserva na coleção 'reservations'
+    - marca o quarto como 'ocupado'
     """
 
     try:
+        # 1) Garante que o quarto existe
         room_ref = db.collection("rooms").document(room_id)
-        snap = room_ref.get()
-        if not snap.exists:
+        room_snap = room_ref.get()
+        if not room_snap.exists:
             raise HTTPException(status_code=404, detail="Quarto não encontrado")
 
-        room = snap.to_dict()
+        room_data = room_snap.to_dict() or {}
+        room_number = room_data.get("number") or room_data.get("identifier") or room_id
 
-        # -------------------------------
-        # Dados recebidos do frontend
-        # -------------------------------
-        guestName = payload.get("guestName")
-        guestCPF = payload.get("guestCPF")
-        guestEmail = payload.get("guestEmail")
-        guestPhone = payload.get("guestPhone")
-        selectedGuestId = payload.get("selectedGuestId")
-
-        hasCompany = payload.get("hasCompany")
-        selectedCompanyId = payload.get("selectedCompanyId")
-        companyName = payload.get("companyName")
-        companyCNPJ = payload.get("companyCNPJ")
-        companyPhone = payload.get("companyPhone")
-        companyEmail = payload.get("companyEmail")
-
-        companions = payload.get("companions", [])
-        
-        checkInDate = payload.get("checkInDate")
-        checkOutDate = payload.get("checkOutDate")
+        # 2) Extrai dados básicos enviados pelo front
+        guest_name = payload.get("guestName")      # ou nome digitado
+        guest_cpf = payload.get("guestCPF")
         notes = payload.get("notes", "")
 
-        # -------------------------------
-        # Monta documento da reserva
-        # -------------------------------
-        reservation_data = {
-            "roomId": room_id,
-            "roomNumber": room.get("number"),
+        check_in = payload.get("checkInDate")      # "yyyy-MM-dd"
+        check_out = payload.get("checkOutDate")    # "yyyy-MM-dd"
 
-            "checkIn": checkInDate,
-            "checkOut": checkOutDate,
+        companions = payload.get("companions", [])
+        companions_count = len(companions) if isinstance(companions, list) else 0
+        total_guests = 1 + companions_count  # hóspede + acompanhantes
+
+        company_name = payload.get("companyName")
+        company_id = payload.get("companyId")  # se estiver usando id de empresa
+
+        # 3) Monta documento da reserva
+        reservation_data = {
+            "createdAt": firestore.SERVER_TIMESTAMP,
+            "roomId": room_id,
+            "roomNumber": room_number,
+
+            "guestName": guest_name,
+            "guestCPF": guest_cpf,
+            "companions": companions,
+            "guests": total_guests,
+
+            "companyName": company_name,
+            "companyId": company_id,
+
+            "checkIn": check_in,
+            "checkOut": check_out,
             "notes": notes,
 
-            "guests": 1 + len(companions),  # hóspede + acompanhantes
-
-            # Status da reserva
+            # status iniciais
             "status": "confirmado",
             "checkInStatus": "concluido",
             "checkOutStatus": "pendente",
             "paymentStatus": "pendente",
             "paymentMethod": None,
             "value": 0,
-
-            # Dados do hóspede
-            "selectedGuestId": selectedGuestId,
-            "guestName": guestName,
-            "guestCPF": guestCPF,
-            "guestEmail": guestEmail,
-            "guestPhone": guestPhone,
-
-            # Acompanhantes
-            "companions": companions,
-
-            # Empresa
-            "hasCompany": hasCompany,
-            "selectedCompanyId": selectedCompanyId,
-            "companyName": companyName,
-            "companyCNPJ": companyCNPJ,
-            "companyPhone": companyPhone,
-            "companyEmail": companyEmail,
-
-            # Timestamp
-            "createdAt": firestore.SERVER_TIMESTAMP
         }
 
-        # -------------------------------
-        # Cria reserva no Firestore
-        # -------------------------------
-        new_reservation = db.collection("reservations").document()
-        new_reservation.set(reservation_data)
+        # 4) Cria a reserva
+        res_ref = db.collection("reservations").document()
+        res_ref.set(reservation_data)
 
-        # -------------------------------
-        # Atualiza quarto → Ocupado
-        # -------------------------------
-        room_ref.update({"status": "ocupado"})
+        # 5) Atualiza status do quarto -> ocupado
+        update_room_status(room_id, "ocupado")
 
         return {
             "message": "Check-in realizado com sucesso.",
-            "reservationId": new_reservation.id
+            "reservationId": res_ref.id,
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
