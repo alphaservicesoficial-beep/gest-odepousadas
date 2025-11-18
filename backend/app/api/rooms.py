@@ -140,3 +140,58 @@ def checkin_room(room_id: str, payload: dict = Body(...)):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/rooms/{room_id}/checkout")
+def checkout_room(room_id: str):
+    """
+    Finaliza a reserva ativa do quarto e libera o quarto.
+    """
+    try:
+        room_ref = db.collection("rooms").document(room_id)
+        room_snap = room_ref.get()
+
+        if not room_snap.exists():
+            raise HTTPException(status_code=404, detail="Quarto não encontrado")
+
+        # 1. Buscar reserva ativa (pendente de checkout)
+        reservations_ref = (
+            db.collection("reservations")
+            .where("roomId", "==", room_id)
+            .where("checkOutStatus", "==", "pendente")
+            .stream()
+        )
+
+        reservation = None
+        for r in reservations_ref:
+            reservation = r
+            break
+
+        if not reservation:
+            raise HTTPException(
+                status_code=404,
+                detail="Nenhuma reserva pendente de check-out encontrada."
+            )
+
+        res_ref = db.collection("reservations").document(reservation.id)
+
+        # 2. Atualizar reserva
+        res_ref.update({
+            "checkOutStatus": "concluido",
+            "status": "finalizada"
+        })
+
+        # 3. Liberar quarto
+        room_ref.update({
+            "status": "disponível",
+            "guest": "",
+            "guestNotes": ""
+        })
+
+        return {
+            "message": "Check-out concluído com sucesso.",
+            "reservationId": reservation.id
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
