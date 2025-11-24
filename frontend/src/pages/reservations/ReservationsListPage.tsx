@@ -159,9 +159,20 @@ function ReservationsListPage() {
 
   async function handleConfirmDeparture(id: string) {
     try {
-      const res = await fetch(`${baseUrl}/reservations/${id}/checkout`, { method: "PUT" });
+      const res = await fetch(`${baseUrl}/reservations/${id}/checkout`, { method: "POST" });
       if (!res.ok) throw new Error();
-      setReservations((prev) => prev.map((r) => (r.id === id ? { ...r, checkOutStatus: "concluido" } : r)));
+      setReservations((prev) =>
+  prev.map((r) =>
+    r.id === id
+      ? {
+          ...r,
+          checkOutStatus: "concluido",
+          reservationStatus: "finalizada",  // ← AQUI
+        }
+      : r
+  )
+);
+
       setIsModalOpen(false);
       alert("Check-out concluído.");
     } catch {
@@ -176,19 +187,27 @@ function ReservationsListPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ method, amount }),
       });
+  
       if (!res.ok) throw new Error();
-      setReservations((prev) =>
-        prev.map((r) =>
+  
+      // Atualize o estado local com o novo valor pago
+      setReservations((prev) => {
+        const updatedReservations = prev.map((r) =>
           r.id === id
             ? {
                 ...r,
-                paymentStatus: "confirmado",
-                paymentMethod: method,
-                total: amount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }),
+                paymentStatus: "confirmado", // Atualiza o status do pagamento
+                paymentMethod: method,       // Atualiza o método de pagamento
+                total: amount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }), // Atualiza o valor total
               }
             : r
-        )
-      );
+        );
+        
+        console.log("Updated Reservations:", updatedReservations);  // <-- Aqui é onde você coloca o log
+  
+        return updatedReservations;
+      });
+  
       setSelectedPayment("");
       setPaymentAmount("");
       setIsModalOpen(false);
@@ -197,7 +216,7 @@ function ReservationsListPage() {
       alert("Erro ao registrar pagamento");
     }
   }
-
+  
   async function handleCancelReservation(id: string) {
     try {
       const res = await fetch(`${baseUrl}/reservations/${id}/cancel`, { method: "PUT" });

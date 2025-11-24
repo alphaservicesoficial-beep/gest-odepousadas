@@ -57,22 +57,22 @@ import {
   
   // --- Funções de Máscara (Utilitárias) ---
   const maskCNPJ = (value: string): string => {
-    const cleaned = value.replace(/\D/g, "");
-    return cleaned
-      .replace(/^(\d{2})(\d)/, "$1.$2")
-      .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
-      .replace(/\.(\d{3})(\d)/, ".$1/$2")
-      .replace(/(\d{4})(\d)/, "$1-$2")
-      .substring(0, 18);
+    const cleaned = value?.replace(/\D/g, ""); // Usando optional chaining (value?.)
+    return cleaned
+      ?.replace(/^(\d{2})(\d)/, "$1.$2")
+      ?.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+      ?.replace(/\.(\d{3})(\d)/, ".$1/$2")
+      ?.replace(/(\d{4})(\d)/, "$1-$2")
+      ?.substring(0, 18) ?? ""; // Garantir que sempre tenha um valor de fallback
   };
   
   const maskPhone = (value: string): string => {
-    const cleaned = value.replace(/\D/g, "");
-    return cleaned
-      .replace(/^(\d{2})(\d)/g, "($1) $2")
-      .replace(/(\d{4})(\d)/, "$1-$2")
-      .replace(/(\d{4})-(\d)(\d{4})/, "$1$2-$3")
-      .substring(0, 15);
+    const cleaned = value?.replace(/\D/g, "");
+    return cleaned
+      ?.replace(/^(\d{2})(\d)/g, "($1) $2")
+      ?.replace(/(\d{4})(\d)/, "$1-$2")
+      ?.replace(/(\d{4})-(\d)(\d{4})/, "$1$2-$3")
+      ?.substring(0, 15) ?? ""; // Garantir que sempre tenha um valor de fallback
   };
   
 
@@ -147,33 +147,29 @@ const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
     };
     
     // --- Funções Firebase ---
-    async function loadCompanies() {
-      // Se o Firebase não estiver configurado, descomente esta linha para simular dados:
-      // setCompanies([{ id: "1", name: "Simulada", cnpj: "00000000000101", mainContact: "Contato", email: "a@b.com", phone: "11999999999", checkIn: "2025-10-01", roomNumber: "105" }]);
-      
-      try {
-          const response = await fetch(`${baseUrl}/companies`);
-  const data = await response.json();
+  async function loadCompanies() {
+    try {
+      const response = await fetch(`${baseUrl}/companies`);
+      const data = await response.json();
+      
+      console.log(data); // Verifique o conteúdo de 'data' que está vindo da API
+      
+      const sortedCompanies = data.sort(
+        (a: any, b: any) => getCompanySortKey(b) - getCompanySortKey(a)
+      );
+      
+      setCompanies(sortedCompanies);
+    } catch (error) {
+      console.error("Erro ao carregar empresas:", error);
+      setCompanies([]); // Retorna vazio se houver erro na requisição
+    }
+  }
+  
+  
 
-  // Ordena do mais recente (último criado) para o mais antigo
-  const sortedCompanies = data.sort(
-    (a: any, b: any) => getCompanySortKey(b) - getCompanySortKey(a)
-  );
-  
-  setCompanies(sortedCompanies);
-  
-
-      } catch (error) {
-          // console.error("Erro ao carregar empresas do Firebase. Usando array vazio.", error);
-          setCompanies([]); // Retorna vazio se houver erro no Firebase
-      }
-    }
-  
-    useEffect(() => {
-      loadCompanies();
-    }, []);
-
-  
+  useEffect(() => {
+    loadCompanies(); // Carregar as empresas
+  }, []);
   
   
     // --- Função de Suporte: ATUALIZAÇÃO DO QUARTO ---

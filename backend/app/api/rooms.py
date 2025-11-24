@@ -185,7 +185,12 @@ def checkout_room(room_id: str):
         room_ref.update({
             "status": "disponível",
             "guest": "",
-            "guestNotes": ""
+            "guestId": "",
+            "guestNotes": "",
+            "companions": [],
+            "companyId": "",
+            "companyName": "",
+            "companyCNPJ": "",
         })
 
         return {
@@ -195,3 +200,4 @@ def checkout_room(room_id: str):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
