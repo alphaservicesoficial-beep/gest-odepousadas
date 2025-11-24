@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from io import BytesIO
 from datetime import datetime
+import pytz
 from app.core.firebase import db
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
@@ -80,7 +81,9 @@ def generate_reservation_receipt(reservation_id: str):
     pay_status = res.get("paymentStatus", "pendente")
     pay_method = res.get("paymentMethod", "—")
     total = _brl(res.get("value", 0))
-    generated_at = datetime.now().strftime("%d/%m/%Y %H:%M")
+    tz = pytz.timezone("America/Sao_Paulo")
+    generated_at = datetime.now(tz).strftime("%d/%m/%Y %H:%M")
+
 
     # --- cria PDF ---
     buf = BytesIO()
