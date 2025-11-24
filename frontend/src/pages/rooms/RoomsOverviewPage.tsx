@@ -27,7 +27,8 @@ import {
   query,
   limit,
   addDoc,
-  setDoc, 
+  setDoc,
+  where, 
   onSnapshot,
 } from "firebase/firestore";
 
@@ -84,7 +85,11 @@ type Room = {
   images?: string[];
   // 💡 Campos adicionados para resolver o erro no JSX:
   guest?: string | null; // Nome ou identificador do hóspede (que está no JSX)
-  guestNotes?: string | null; // Observações sobre a estadia/hóspede (que está no JSX)
+  guestNotes?: string | null; 
+  
+  
+  activeReservation?: Guest | null;
+// Observações sobre a estadia/hóspede (que está no JSX)
 };
 
 type MaintenanceIssue = {
@@ -619,6 +624,17 @@ function RoomDetailsModal({
 
   if (!selectedRoom) return null;
 
+  const active = selectedRoom?.activeReservation || null;
+
+
+  // Busca a reserva ativa deste quarto
+// 🔥 Reserva ativa REAL (única que deve aparecer)
+
+// Busca a reserva ativa deste quarto
+
+
+  // 🔥 Reserva ativa do quarto
+
   // Funções auxiliares para ícones (mantidas)
   const amenityIcons: Record<string, JSX.Element> = {
     "wi-fi": <Wifi size={18} className="text-primary" />,
@@ -678,41 +694,36 @@ function RoomDetailsModal({
 
 
 {/* =============================== */}
-{/*      HÓSPEDE / ACOMP / EMPRESA  */}
+{/*      HÓSPEDE / ACOMP / EMPRESA   */}
 {/* =============================== */}
 
 {/* HÓSPEDE */}
 <p className="mt-6 text-xs uppercase text-muted-soft">Hóspede</p>
 <p className="text-sm">
-  {guests.find(g => g.roomId === selectedRoom.id)?.fullName || "—"}
+  {active?.fullName || selectedRoom.guest || "—"}
 </p>
 
 {/* ACOMPANHANTES */}
-{/* ACOMPANHANTES */}
 <p className="mt-6 text-xs uppercase text-muted-soft">Acompanhantes</p>
 
-{(() => {
-  const guest = guests.find(g => g.roomId === selectedRoom.id);
+{!active?.companions || active.companions.length === 0 ? (
+  <p className="text-sm">Nenhum</p>
+) : (
+  <div className="mt-1 text-sm space-y-1">
+  {active.companions.map((c, i) => (
+    <div key={i}>{c.name} – {c.cpf}</div>
+  ))}
+</div>
 
-  if (!guest || !guest.companions || guest.companions.length === 0) {
-    return <p className="text-sm">Nenhum</p>;
-  }
-
-  return (
-    <ul className="list-disc ml-4 text-sm">
-      {guest.companions.map((c, i) => (
-        <li key={i}>{c.name} - {c.cpf}</li>
-      ))}
-    </ul>
-  );
-})()}
-
+)}
 
 {/* EMPRESA */}
 <p className="mt-6 text-xs uppercase text-muted-soft">Empresa</p>
 <p className="text-sm">
-  {guests.find(g => g.roomId === selectedRoom.id)?.companyName || "—"}
+  {active?.companyName || "—"}
 </p>
+
+
 
 
           <div className="mt-6 flex gap-3">
@@ -1046,69 +1057,55 @@ const [registeredGuests, setRegisteredGuests] = useState<Guest[]>([]);
 
 
   const initialCheckinState = {
-   // 🔹 Dados do hóspede
-   hasGuestAccount: null as "sim" | "nao" | null,
-   guestName: "",
-   guestCPF: "",
-   guestEmail: "",
-   guestPhone: "",
+  // 🔹 Dados do hóspede
+  hasGuestAccount: null as "sim" | "nao" | null,
+  guestName: "",
+  guestCPF: "",
+  guestEmail: "",
+  guestPhone: "",
 
-   
+  // 🔹 Acompanhantes
+  hasCompanions: "nao" as "sim" | "nao",
+  companionsCount: 0,
+  companions: [] as { name: string; cpf: string }[],
 
+  // 🔹 Empresa vinculada
+  hasCompany: "nao" as "sim" | "nao", // se o hóspede está vinculado a uma empresa
+  companyName: "",
+  companyResponsible: "",
+  companyCNPJ: "",
+  companyEmail: "",
+  companyPhone: "",
+  hasCompanyAccount: null as "sim" | "nao" | null,
+  searchCompany: "", // telefone da empresa
 
-   // 🔹 Acompanhantes
-   hasCompanions: "nao" as "sim" | "nao",
-   companionsCount: 0,
-   companions: [] as { name: string; cpf: string }[],
+  // 🔹 IDs de vínculo
+  selectedCompanyId: null as string | null,
+  selectedCompanyName: "",
+  selectedCompanyCNPJ: "",
 
-   // 🔹 Empresa vinculada
-   hasCompany: "nao" as "sim" | "nao", // se o hóspede está vinculado a uma empresa
-   companyName: "",
-   companyResponsible: "",
-   companyCNPJ: "",
-   companyEmail: "",
-   companyPhone: "",
-   hasCompanyAccount: null as "sim" | "nao" | null,
-   searchCompany: "", // telefone da empresa
+  searchGuest: "",
+  selectedGuestId: null as string | null,
+  selectedGuestName: "",
+  selectedGuestCPF: "",
+  selectedGuestEmail: "",
+  selectedGuestPhone: "",
+  selectedGuestFullData: null as Guest | null,
 
-   // 🔹 IDs de vínculo
+  showSearch: true,
+  showCompanySearch: true,
 
-   selectedCompanyId: null as string | null,
+  // 🔹 Dados de estadia
+  // Datas já preenchidas automaticamente, formatadas para dd/mm/yyyy
+  checkInDate: toBR(new Date().toISOString().split("T")[0]),
+  checkOutDate: (() => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return toBR(tomorrow.toISOString().split("T")[0]);
+  })(),
 
-   selectedCompanyName: "",
-selectedCompanyCNPJ: "",
-
-
-searchGuest: "",
-selectedGuestId: null as string | null,
-selectedGuestName: "",
-selectedGuestCPF: "",
-selectedGuestEmail: "",
-selectedGuestPhone: "",
-
-selectedGuestFullData: null as Guest | null,
-
-
-showSearch: true,
-showCompanySearch: true,
-
-
-
-
-
-   // 🔹 Dados de estadia
-   // Datas já preenchidas automaticamente
-   checkInDate: new Date().toISOString().split("T")[0],
-   checkOutDate: (() => {
-     const tomorrow = new Date();
-     tomorrow.setDate(tomorrow.getDate() + 1);
-     return tomorrow.toISOString().split("T")[0];
-   })(),
-
-   notes: "",
- 
-   
- };
+  notes: "",
+};
 
 
   const [checkinForm, setCheckinForm] = useState({
@@ -1313,10 +1310,11 @@ function clearSelectedCompany() {
   }
 
   function toBR(date: string) {
-    if (!date) return "";
-    const [yyyy, mm, dd] = date.split("-");
-    return `${dd}/${mm}/${yyyy}`;
-  }
+  if (!date) return "";
+  const [yyyy, mm, dd] = date.split("-");
+  return `${dd}/${mm}/${yyyy}`;
+}
+
 
   function toISO(date: string) {
     if (!date) return "";
@@ -1327,23 +1325,34 @@ function clearSelectedCompany() {
   }
 
   function maskCPF(value: string) {
-    return value
-      .replace(/\D/g, "")
-      .replace(/(\d{3})(\d)/, "$1.$2")
-      .replace(/(\d{3})(\d)/, "$1.$2")
-      .replace(/(\d{3})(\d{1,2})$/, "$1-$2")
-      .slice(0, 14);
-  }
+  // Remove qualquer caractere não numérico
+  const cleanedValue = value.replace(/\D/g, "");
 
-  function maskCNPJ(value: string) {
-    return value
-      .replace(/\D/g, "")
-      .replace(/(\d{2})(\d)/, "$1.$2")
-      .replace(/(\d{3})(\d)/, "$1.$2")
-      .replace(/(\d{3})(\d)/, "$1/$2")
-      .replace(/(\d{4})(\d{1,2})$/, "$1-$2")
-      .slice(0, 18);
-  }
+  // Limita o valor a 11 dígitos (máximo de CPF)
+  const limitedValue = cleanedValue.slice(0, 11);
+
+  // Aplica a formatação do CPF
+  return limitedValue
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+}
+
+
+function maskCNPJ(value: string) {
+  // Remove qualquer caractere não numérico
+  const cleanedValue = value.replace(/\D/g, "");
+
+  // Limita o valor a 14 dígitos (máximo de CNPJ)
+  const limitedValue = cleanedValue.slice(0, 14);
+
+  // Aplica a formatação do CNPJ
+  return limitedValue
+    .replace(/(\d{2})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1/$2")
+    .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+}
 
   // Carrega empresas quando abrir o modal de check-in
 // Carrega empresas E HÓSPEDES CADASTRADOS quando abrir o modal de check-in
@@ -1396,19 +1405,26 @@ useEffect(() => {
   
     // Monta lista de quartos
     const roomData: Room[] = roomSnap.docs.map((docSnap) => {
-      const data = docSnap.data() as any;
-      return {
-        id: docSnap.id,
-        identifier: data.identifier || docSnap.id.split("-").pop() || "000",
-        type: data.type || "Desconhecido",
-        status: (data.status ?? "disponível") as Room["status"],
-        description: data.description || "",
-        images: data.images || [],
-        guest: data.guest || "",
-        guestNotes: data.guestNotes || "",
-      } as Room;
-    });
-  
+  const data = docSnap.data() as any;
+  return {
+    id: docSnap.id,
+    identifier: data.identifier || "",
+    type: data.type || "",
+    status: data.status || "disponível",
+    description: data.description || "",
+    images: data.images || [],
+
+    guest: data.guest || "",
+    guestNotes: data.guestNotes || "",
+
+    // 🔥 CAMPOS NOVOS QUE PRECISAM VIR DO FIRESTORE
+    companions: data.companions || [],
+    companyName: data.companyName || "",
+    companyCNPJ: data.companyCNPJ || "",
+    companyId: data.companyId || null,
+  } as Room;
+});
+
     // Monta lista de "hóspedes/reservas" igual você faz no loadData
     const reservationData: Guest[] = reservationSnap.docs.map((docSnap) => {
       const data = docSnap.data() as any;
@@ -1463,7 +1479,12 @@ useEffect(() => {
     today.setHours(0, 0, 0, 0);
   
     return roomsList.map((room) => {
-      const resGuest = guestList.find((g) => g.roomId === room.id);
+     const resGuest = guestList.find(
+  (g) =>
+    g.roomId === room.id &&
+    g.checkOutStatus === "pendente"
+);
+
   
       // Sempre mostrar o nome do hóspede — nunca o da empresa
       const displayName =
@@ -1902,24 +1923,25 @@ companyCNPJ: finalCompanyCNPJ,
 
   
 
-  async function loadActiveReservation(roomId: string) {
-    try {
-      // pega todas as reservas já carregadas na tela
-      const active = guests.find(
-        (g) => g.roomId === roomId && g.checkOutStatus === "pendente"
-      );
+ async function loadActiveReservation(roomId: string) {
+  try {
+    const q = query(
+      collection(db, "reservations"),
+      where("roomId", "==", roomId),
+      where("checkOutStatus", "==", "pendente")
+    );
 
-      if (!active) {
-        alert("Nenhuma reserva ativa encontrada.");
-        return null;
-      }
+    const snap = await getDocs(q);
 
-      return active;
-    } catch (error) {
-      console.error(error);
-      return null;
-    }
+    if (snap.empty) return null;
+
+    return { id: snap.docs[0].id, ...snap.docs[0].data() };
+  } catch (error) {
+    console.error(error);
+    return null;
   }
+}
+
 
   async function openCheckoutModal(room: Room) {
     const reservation = await loadActiveReservation(room.id);
@@ -2154,12 +2176,23 @@ await updateDoc(roomRefFS, {
               )}
 
               <div className="mt-4 flex gap-2">
-                <button
-                  className="btn-secondary btn-sm flex-auto uppercase tracking-wide"
-                  onClick={() => setSelectedRoom(room)}
-                >
-                  Detalhes
-                </button>
+              <button
+  className="btn-secondary btn-sm flex-auto uppercase tracking-wide"
+  onClick={async () => {
+    const activeReservation = await loadActiveReservation(room.id);
+
+    const enrichedRoom: Room = {
+      ...room,
+      activeReservation: activeReservation || null,
+    } as Room;
+
+    setSelectedRoom(enrichedRoom);
+  }}
+>
+  Detalhes
+</button>
+
+
                 {/* BOTÃO CHECK-IN / CHECK-OUT */}
                 {room.status === "ocupado" ? (
                   <button
@@ -2172,10 +2205,24 @@ await updateDoc(roomRefFS, {
                   <button
   className="btn-outline-success btn-sm flex-auto uppercase tracking-wide"
   onClick={() => {
-    resetCheckinForm();  // 🔥 LIMPA TUDO ANTES DE ABRIR
-    setCheckinRoom(room);
-    setIsCheckinOpen(true);
-  }}
+  resetCheckinForm();
+
+  // 🔥 limpa tudo relacionado ao hóspede antigo
+  const cleanRoom = {
+    ...room,
+    guest: "",
+    guestId: "",
+    companions: [],
+    companyId: "",
+    companyName: "",
+    companyCNPJ: "",
+    guestNotes: "",
+  };
+
+  setCheckinRoom(cleanRoom);
+  setIsCheckinOpen(true);
+}}
+
 >
 
                     Check-in
@@ -2189,6 +2236,7 @@ await updateDoc(roomRefFS, {
 
       {/* Renderização dos Modals como componentes externos, passando as props */}
       <RoomDetailsModal
+      
   selectedRoom={selectedRoom}
   setSelectedRoom={setSelectedRoom}
   setEditingRoom={setEditingRoom}
@@ -2279,13 +2327,14 @@ await updateDoc(roomRefFS, {
                 <h3 className="font-semibold text-sm mb-1">Acompanhantes</h3>
 
                 {checkinForm.companions?.length ? (
-  <ul className="list-disc ml-5 text-sm">
-    {checkinForm.companions.map((companion, i) => (
-      <li key={i}>
-        {companion.name} - {companion.cpf}
-      </li>
-    ))}
-  </ul>
+  <div className="ml-0 text-sm space-y-1">
+  {checkinForm.companions.map((companion, i) => (
+    <p key={i}>
+      {companion.name} – {companion.cpf}
+    </p>
+  ))}
+</div>
+
 ) : (
   <p className="text-sm">Nenhum</p>
 )}
@@ -2521,19 +2570,22 @@ await updateDoc(roomRefFS, {
                       <label className="flex flex-col space-y-2">
                         <span className="text-sm font-medium">CPF *</span>
                         <input
-                          type="text"
-                          name="guestCPF"
-                          required
-                          className="surface-input"
-                          placeholder="000.000.000-00"
-                          value={checkinForm.guestCPF}
-                          onChange={(e) =>
-                            setCheckinForm((prev) => ({
-                              ...prev,
-                              guestCPF: maskCPF(e.target.value),
-                            }))
-                          }
-                        />
+  type="text"
+  name="guestCPF"
+  required
+  className="surface-input"
+  placeholder="000.000.000-00"
+  value={checkinForm.guestCPF}
+  onChange={(e) => {
+    const maskedCPF = maskCPF(e.target.value); // Aplica a máscara
+    console.log(maskedCPF); // Verifica o valor da máscara
+    setCheckinForm((prev) => ({
+      ...prev,
+      guestCPF: maskedCPF, // Atualiza o valor no estado
+    }));
+  }}
+/>
+
                       </label>
 
                       {/* E-mail */}
@@ -2685,17 +2737,19 @@ await updateDoc(roomRefFS, {
                         </div>
 
                         <div>
-                          <label className="text-sm font-medium">CPF</label>
-                          <input
-                            type="text"
-                            className="surface-input mt-1"
-                            value={checkinForm.companions[index]?.cpf || ""}
-                            onChange={(e) =>
-                              updateCompanion(index, "cpf", e.target.value)
-                            }
-                            placeholder="000.000.000-00"
-                          />
-                        </div>
+  <label className="text-sm font-medium">CPF</label>
+  <input
+    type="text"
+    className="surface-input mt-1"
+    value={checkinForm.companions[index]?.cpf || ""}
+    // Aplica a máscara sempre que o valor de CPF for alterado
+    onChange={(e) =>
+      updateCompanion(index, "cpf", maskCPF(e.target.value))  // Aplica a máscara
+    }
+    placeholder="000.000.000-00"
+  />
+</div>
+
                       </div>
                     ))}
                 </div>
@@ -2708,75 +2762,79 @@ await updateDoc(roomRefFS, {
                   </h3>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Check-in */}
-                    <div className="relative w-full">
-                      {/* Input de texto visível (dd/mm/yyyy) */}
-                      <input
-                        type="text"
-                        placeholder="dd/mm/yyyy"
-                        className="surface-input pr-10"
-                        value={checkinForm.checkInDate}
-                        onChange={(e) =>
-                          setCheckinForm((prev) => ({
-                            ...prev,
-                            checkInDate: maskDateBR(e.target.value),
-                          }))
-                        }
-                      />
+  {/* Check-in */}
+  <div className="relative w-full">
+    {/* Campo de texto visível (dd/mm/yyyy) */}
+   <input
+  type="text"
+  placeholder="dd/mm/yyyy"
+  className="surface-input pr-10"
+  value={checkinForm.checkInDate}
+  onChange={(e) => {
+    const formattedDate = maskDateBR(e.target.value);
+    setCheckinForm((prev) => ({
+      ...prev,
+      checkInDate: formattedDate,
+    }));
+  }}
+/>
 
-                      {/* Ícone do calendário */}
-                      <Calendar
-                        size={18}
-                        className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-500 pointer-events-none"
-                      />
 
-                      {/* Input DATE invisível para abrir o calendário */}
-                      <input
-                        type="date"
-                        className="absolute inset-0 opacity-0 cursor-pointer"
-                        value={toISO(checkinForm.checkInDate)} // conversão BR → ISO
-                        onChange={(e) =>
-                          setCheckinForm((prev) => ({
-                            ...prev,
-                            checkInDate: toBR(e.target.value), // ISO → BR
-                          }))
-                        }
-                      />
-                    </div>
+    {/* Ícone do calendário */}
+    <Calendar
+      size={18}
+      className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-500 pointer-events-none"
+    />
 
-                    {/* CHECK-OUT */}
-                    <div className="relative w-full">
-                      <input
-                        type="text"
-                        placeholder="dd/mm/yyyy"
-                        className="surface-input pr-10"
-                        value={checkinForm.checkOutDate}
-                        onChange={(e) =>
-                          setCheckinForm((prev) => ({
-                            ...prev,
-                            checkOutDate: maskDateBR(e.target.value),
-                          }))
-                        }
-                      />
+    {/* Input DATE invisível para abrir o calendário */}
+    <input
+      type="date"
+      className="absolute inset-0 opacity-0 cursor-pointer"
+      value={toISO(checkinForm.checkInDate)} // Conversão BR → ISO
+      onChange={(e) => {
+        setCheckinForm((prev) => ({
+          ...prev,
+          checkInDate: toBR(e.target.value), // Conversão ISO → BR
+        }));
+      }}
+    />
+  </div>
 
-                      <Calendar
-                        size={18}
-                        className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-500 pointer-events-none"
-                      />
+  {/* Check-out */}
+  <div className="relative w-full">
+    <input
+      type="text"
+      placeholder="dd/mm/yyyy"
+      className="surface-input pr-10"
+      value={checkinForm.checkOutDate}
+      onChange={(e) => {
+        const formattedDate = maskDateBR(e.target.value);
+        setCheckinForm((prev) => ({
+          ...prev,
+          checkOutDate: formattedDate,
+        }));
+      }}
+    />
 
-                      <input
-                        type="date"
-                        className="absolute inset-0 opacity-0 cursor-pointer"
-                        value={toISO(checkinForm.checkOutDate)}
-                        onChange={(e) =>
-                          setCheckinForm((prev) => ({
-                            ...prev,
-                            checkOutDate: toBR(e.target.value),
-                          }))
-                        }
-                      />
-                    </div>
-                  </div>
+    <Calendar
+      size={18}
+      className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-500 pointer-events-none"
+    />
+
+    <input
+      type="date"
+      className="absolute inset-0 opacity-0 cursor-pointer"
+      value={toISO(checkinForm.checkOutDate)}
+      onChange={(e) => {
+        setCheckinForm((prev) => ({
+          ...prev,
+          checkOutDate: toBR(e.target.value),
+        }));
+      }}
+    />
+  </div>
+</div>
+
                 </div>
               )}
 

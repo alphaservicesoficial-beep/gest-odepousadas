@@ -24,7 +24,7 @@ def get_financial_dashboard():
 
         payment_methods = {
             "Cartão": 0.0,
-            "PIX": 0.0,
+            "Pix": 0.0,
             "Dinheiro": 0.0,
             "Transferência": 0.0,
         }

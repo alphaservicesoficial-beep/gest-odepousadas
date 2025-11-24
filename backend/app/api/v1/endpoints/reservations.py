@@ -74,6 +74,18 @@ async def get_reservations_list() -> list[ReservationListItem]:
             payment_method="Dinheiro",
             total_amount=1250.0,
         )
+        ReservationListItem(
+            id="RES-100",
+            guest_or_company="Maria Silva",
+            room="203",
+            guests_count=2,
+            check_in=date.today(),
+            check_out=date.today(),
+            reservation_status="confirmada",
+            payment_status="pago",
+            payment_method="Pix",
+            total_amount=780.0,
+        ),
     ]
 
 

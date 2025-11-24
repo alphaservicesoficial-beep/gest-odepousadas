@@ -23,7 +23,7 @@ async def get_financial_dashboard() -> FinancialDashboard:
         ),
         payment_overview=[
             PaymentOverviewItem(method="Cartão", amount=98000.0),
-            PaymentOverviewItem(method="PIX", amount=32000.0),
+            PaymentOverviewItem(method="Pix", amount=32000.0),
             PaymentOverviewItem(method="Dinheiro", amount=22000.0),
         ],
         insights=[

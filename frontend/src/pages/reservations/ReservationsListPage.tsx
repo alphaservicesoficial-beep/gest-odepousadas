@@ -180,42 +180,41 @@ function ReservationsListPage() {
     }
   }
 
-  async function handleRegisterPayment(id: string, method: string, amount: number) {
+async function handleRegisterPayment(id: string, method: string, amount: number) {
     try {
       const res = await fetch(`${baseUrl}/reservations/${id}/payment`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ method, amount }),
       });
-  
-      if (!res.ok) throw new Error();
-  
-      // Atualize o estado local com o novo valor pago
-      setReservations((prev) => {
-        const updatedReservations = prev.map((r) =>
-          r.id === id
+
+      if (!res.ok) throw new Error("Erro ao registrar pagamento");
+
+      // Atualiza o estado local diretamente, sem buscar todas as reservas novamente
+      setReservations((prevReservations) =>
+        prevReservations.map((reservation) =>
+          reservation.id === id
             ? {
-                ...r,
-                paymentStatus: "confirmado", // Atualiza o status do pagamento
+                ...reservation,
+                paymentStatus: "confirmado", // Marca como pago
                 paymentMethod: method,       // Atualiza o método de pagamento
-                total: amount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }), // Atualiza o valor total
+                total: formatCurrency(amount), // Atualiza o valor pago
               }
-            : r
-        );
-        
-        console.log("Updated Reservations:", updatedReservations);  // <-- Aqui é onde você coloca o log
-  
-        return updatedReservations;
-      });
-  
+            : reservation
+        )
+      );
+
+      // Limpar os campos do pagamento e fechar o modal
       setSelectedPayment("");
       setPaymentAmount("");
       setIsModalOpen(false);
-      alert("Pagamento registrado.");
-    } catch {
-      alert("Erro ao registrar pagamento");
+      alert("Pagamento registrado com sucesso.");
+    } catch (error) {
+      console.error(error);
+      alert("Erro ao registrar pagamento.");
     }
-  }
+}
+
   
   async function handleCancelReservation(id: string) {
     try {
@@ -529,15 +528,11 @@ function ReservationsListPage() {
             </div>
 
             <div className="mt-6 flex flex-col gap-2">
-              {!isArrivalConfirmed ? (
-                <button className="btn-primary" onClick={() => handleConfirmArrival(selected.id)}>Confirmar chegada</button>
-              ) : (
-                <button className="btn-primary" onClick={() => handleConfirmDeparture(selected.id)}>Confirmar saída</button>
-              )}
+              
 
               {/* Pagamento */}
               <div className="grid grid-cols-3 gap-2">
-                {["Dinheiro", "Cartão", "Transferência"].map((m) => (
+                {["Dinheiro", "Cartão", "Pix"].map((m) => (
                   <button
                     key={m}
                     className={`btn-secondary ${selectedPayment === m ? "ring-2 ring-primary" : ""}`}
@@ -554,7 +549,7 @@ function ReservationsListPage() {
                 className="surface-input"
               />
               <button
-                className="btn-secondary"
+                className="btn-primary"
                 onClick={() => {
                   if (!selectedPayment || !paymentAmount) return;
                   const value = Number(paymentAmount.replace(/\./g, "").replace(",", "."));
