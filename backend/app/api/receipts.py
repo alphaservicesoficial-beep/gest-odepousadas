@@ -44,6 +44,9 @@ def _resolve_room_number(data: dict) -> str:
 # =======================================================
 # 🔹 Gerar PDF do comprovante de reserva
 # =======================================================
+# =======================================================
+# 🔹 Gerar PDF do comprovante de reserva
+# =======================================================
 @router.get("/reservations/{reservation_id}/receipt")
 def generate_reservation_receipt(reservation_id: str):
     """
@@ -66,10 +69,13 @@ def generate_reservation_receipt(reservation_id: str):
 
     # --- dados da reserva ---
     guest_or_company = res.get("guestName") or res.get("companyName") or "—"
+    company_name = res.get("companyName") or ""  # Nome da empresa, se houver
     room_number = _resolve_room_number(res)
     check_in = res.get("checkIn", "—")
     check_out = res.get("checkOut", "—")
     guests = str(res.get("guests", 1))
+    companions = res.get("companions", [])  # Lista de acompanhantes
+    companions_list = ", ".join(companions) if companions else "Nenhum acompanhante"
     status = res.get("status") or res.get("reservationStatus") or "—"
     pay_status = res.get("paymentStatus", "pendente")
     pay_method = res.get("paymentMethod", "—")
@@ -112,11 +118,13 @@ def generate_reservation_receipt(reservation_id: str):
 
     # Corpo do comprovante
     lines = [
-        ("Nome/Empresa:", guest_or_company),
+        ("Nome do Hóspede:", guest_or_company),
+        ("Nome da Empresa:", company_name or "Nenhuma empresa vinculada"),  # Exibe a empresa, se houver
         ("ID da Reserva:", reservation_id),
         ("Quarto:", room_number),
         ("Check-in:", check_in),
         ("Check-out:", check_out),
+        ("Acompanhantes:", companions_list),  # Lista de acompanhantes
         ("Hóspedes:", guests),
         ("Status da Reserva:", status.capitalize() if isinstance(status, str) else status),
         ("Status do Pagamento:", pay_status.capitalize() if isinstance(pay_status, str) else pay_status),

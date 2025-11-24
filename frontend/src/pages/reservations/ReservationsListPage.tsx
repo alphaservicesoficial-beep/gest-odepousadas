@@ -180,40 +180,42 @@ function ReservationsListPage() {
     }
   }
 
-async function handleRegisterPayment(id: string, method: string, amount: number) {
-    try {
-      const res = await fetch(`${baseUrl}/reservations/${id}/payment`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ method, amount }),
-      });
 
-      if (!res.ok) throw new Error("Erro ao registrar pagamento");
+  async function handleRegisterPayment(id: string, method: string, amount: number) {
+  try {
+    // Envia o pagamento ao backend
+    const res = await fetch(`${baseUrl}/reservations/${id}/payment`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ method, amount }),
+    });
 
-      // Atualiza o estado local diretamente, sem buscar todas as reservas novamente
-      setReservations((prevReservations) =>
-        prevReservations.map((reservation) =>
-          reservation.id === id
-            ? {
-                ...reservation,
-                paymentStatus: "confirmado", // Marca como pago
-                paymentMethod: method,       // Atualiza o método de pagamento
-                total: formatCurrency(amount), // Atualiza o valor pago
-              }
-            : reservation
-        )
-      );
+    if (!res.ok) throw new Error("Erro ao registrar pagamento");
 
-      // Limpar os campos do pagamento e fechar o modal
-      setSelectedPayment("");
-      setPaymentAmount("");
-      setIsModalOpen(false);
-      alert("Pagamento registrado com sucesso.");
-    } catch (error) {
-      console.error(error);
-      alert("Erro ao registrar pagamento.");
-    }
+    // Resposta do backend (apenas a mensagem)
+    const updatedReservation = await res.json();
+
+    // Atualiza o estado local com o novo valor da reserva
+    setReservations((prevReservations) =>
+      prevReservations.map((reservation) =>
+        reservation.id === id
+          ? { ...reservation, total: amount }  // Atualiza apenas o valor da reserva específica
+          : reservation
+      )
+    );
+
+    // Limpar campos e fechar modal
+    setSelectedPayment("");
+    setPaymentAmount("");
+    setIsModalOpen(false);
+
+    alert(`Pagamento registrado com sucesso: ${method} - R$ ${amount}`);
+  } catch (error) {
+    console.error(error);
+    alert("Erro ao registrar pagamento.");
+  }
 }
+
 
   
   async function handleCancelReservation(id: string) {
@@ -273,12 +275,7 @@ async function handleRegisterPayment(id: string, method: string, amount: number)
       <Card
         title="Lista de Reservas"
         description="Acompanhe todas as reservas com filtros e emissão de comprovantes."
-        headerAction={
-          <button className="btn-secondary gap-2" onClick={() => setReceiptModalOpen(true)}>
-            <FileDown size={16} />
-            Gerar comprovante
-          </button>
-        }
+       
       >
         {/* Filtros principais */}
         <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -311,6 +308,13 @@ async function handleRegisterPayment(id: string, method: string, amount: number)
               <option value="prox7">Próximos 7 dias (check-in)</option>
             </select>
           </div>
+
+
+           {/* Botão de Gerar Comprovante */}
+  <button className="btn-secondary gap-2 col-span-2 lg:col-span-1" onClick={() => setReceiptModalOpen(true)}>
+    <FileDown size={16} />
+    Gerar comprovante
+  </button>
         </div>
 
         {/* 💻 Layout desktop */}
