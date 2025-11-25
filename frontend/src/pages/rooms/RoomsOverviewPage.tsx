@@ -3285,44 +3285,7 @@ await updateDoc(roomRefFS, {
                 setIsCreateModalOpen(false);
               }}
             >
-              <div className="block text-sm font-medium text-muted-strong">
-                <span>Imagens do quarto</span>
-                <label
-                  htmlFor="create-room-images"
-                  className="mt-2 flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm font-medium text-muted transition hover:border-primary hover:bg-primary/5 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-200 dark:hover:border-primary dark:focus-within:border-primary"
-                >
-                  <UploadCloud
-                    className="mb-2 h-6 w-6 text-primary"
-                    aria-hidden="true"
-                  />
-                  <span>
-                    Arraste e solte as imagens ou clique para selecionar
-                  </span>
-                  <span className="mt-1 text-xs text-muted">
-                    Formatos PNG, JPG ou WEBP até 5MB
-                  </span>
-                  <input
-                    id="create-room-images"
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                      const files = event.target.files
-                        ? Array.from(event.target.files)
-                        : [];
-                      setCreateImages(files);
-                    }}
-                    className="sr-only"
-                  />
-                </label>
-                {createImages.length > 0 && (
-                  <ul className="mt-2 space-y-1 text-xs text-muted">
-                    {createImages.map((file) => (
-                      <li key={file.name}>{file.name}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
+              
 
               <label className="block text-sm font-medium text-muted-strong">
                 Número/identificador

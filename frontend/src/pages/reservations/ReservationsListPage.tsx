@@ -54,6 +54,13 @@ function inRange(dateISO: string, from: Date, to: Date) {
   }
 }
 
+function toBR(iso: string) {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+
 function ReservationsListPage() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [search, setSearch] = useState("");
@@ -84,7 +91,16 @@ function ReservationsListPage() {
       try {
         const res = await fetch(`${baseUrl}/reservations`);
         const data = await res.json();
-        setReservations(Array.isArray(data) ? data : []);
+        setReservations(
+  Array.isArray(data)
+    ? data.map(r => ({
+        ...r,
+        checkIn: toBR(r.checkIn),
+        checkOut: toBR(r.checkOut)
+      }))
+    : []
+);
+
       } catch (e) {
         console.error(e);
         setReservations([]);
@@ -280,16 +296,19 @@ function ReservationsListPage() {
         {/* Filtros principais */}
         <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {/* Busca */}
-          <div className="relative sm:col-span-2 lg:col-span-2">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-            <input
-              type="search"
-              placeholder="Buscar por hóspede/empresa, ID ou quarto..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="surface-input pl-9 "
-            />
-          </div>
+          <div className="sm:col-span-2 lg:col-span-2">
+  <div className="flex items-center gap-2 surface-input w-full px-3">
+    <Search size={16} className="text-muted" />
+    <input
+      type="search"
+      placeholder="Buscar por hóspede/empresa, ID ou quarto..."
+      className="bg-transparent outline-none flex-1"
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+    />
+  </div>
+</div>
+
 
             
 
@@ -534,6 +553,8 @@ function ReservationsListPage() {
             <div className="mt-6 flex flex-col gap-2">
               
 
+              
+
               {/* Pagamento */}
               <div className="grid grid-cols-3 gap-2">
                 {["Dinheiro", "Cartão", "Pix"].map((m) => (
@@ -573,66 +594,108 @@ function ReservationsListPage() {
       )}
 
       {/* Modal Gerar Comprovante */}
-      {receiptModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-6 backdrop-blur-sm">
-          <div className="w-full max-w-[32rem] rounded-2xl border border-slate-200 bg-white p-6 text-slate-700 shadow-2xl dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
-            <div className="flex items-start justify-between">
-              <h2 className="text-lg font-semibold">Gerar comprovante</h2>
-              <button
-                type="button"
-                onClick={() => { setReceiptModalOpen(false); setPickedReservation(null); }}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-primary hover:text-primary dark:border-slate-800"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+{receiptModalOpen && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-6 backdrop-blur-sm">
+    <div className="w-full max-w-[32rem] rounded-2xl border border-slate-200 bg-white p-6 text-slate-700 shadow-2xl dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
 
-            <div className="relative mt-4">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-              <input
-                className="surface-input pl-9"
-                placeholder="Busque por ID ou nome..."
-                value={receiptSearch}
-                onChange={(e) => setReceiptSearch(e.target.value)}
-              />
-            </div>
+      {/* Cabeçalho */}
+      <div className="flex items-start justify-between">
+        <h2 className="text-lg font-semibold">Gerar comprovante</h2>
 
-            <div className="mt-4 max-h-64 overflow-auto rounded-xl border border-slate-200 dark:border-slate-800">
-              {receiptCandidates.map((r) => {
-                const active = pickedReservation?.id === r.id;
-                return (
-                  <button
-                    key={r.id}
-                    onClick={() => setPickedReservation(r)}
-                    className={`flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-900/50 ${
-                      active ? "bg-slate-50 dark:bg-slate-900/50" : ""
-                    }`}
-                  >
-                    <span className="truncate">
-                      <strong className="text-emphasis">#{r.id.slice(0, 6)}</strong> • {r.guestOrCompany} — Quarto {r.room}
-                    </span>
-                    <span className="text-xs text-muted">{r.checkIn} → {r.checkOut}</span>
-                  </button>
-                );
-              })}
-              {receiptCandidates.length === 0 && (
-                <div className="p-4 text-center text-sm text-muted">Nenhuma reserva encontrada.</div>
-              )}
-            </div>
+        <button
+          type="button"
+          onClick={() => { 
+            setReceiptModalOpen(false); 
+            setPickedReservation(null); 
+            setReceiptSearch(""); 
+          }}
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-primary hover:text-primary dark:border-slate-800"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
 
-            <button
-              className="btn-primary mt-4 w-full"
-              disabled={!pickedReservation}
-              onClick={() => {
-                if (!pickedReservation) return;
-                generateReceiptPDF(pickedReservation.id);
-              }}
-            >
-              Gerar PDF
-            </button>
+      {/* ░░░ 1 — Barra de pesquisa (só aparece se nada selecionado) ░░░ */}
+      {!pickedReservation && (
+        <div className="mt-4 flex items-center gap-3">
+          <div className="flex items-center gap-2 surface-input w-full px-3">
+            <Search size={16} className="text-muted" />
+            <input
+              type="search"
+              placeholder="Busque por ID ou nome..."
+              className="bg-transparent outline-none flex-1"
+              value={receiptSearch}
+              onChange={(e) => setReceiptSearch(e.target.value)}
+            />
           </div>
         </div>
       )}
+
+      {/* ░░░ 2 — Lista de resultados (só aparece se tem texto e nada selecionado) ░░░ */}
+      {!pickedReservation && receiptSearch && (
+        <div className="mt-4 max-h-64 overflow-auto rounded-xl border border-slate-200 dark:border-slate-800">
+
+          {receiptCandidates.map((r) => (
+            <button
+              key={r.id}
+              onClick={() => setPickedReservation(r)}
+              className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-900/50"
+            >
+              <span className="truncate">
+                <strong className="text-emphasis">#{r.id.slice(0, 6)}</strong> • {r.guestOrCompany} — Quarto {r.room}
+              </span>
+              <span className="text-xs text-muted">{r.checkIn} → {r.checkOut}</span>
+            </button>
+          ))}
+
+          {receiptCandidates.length === 0 && (
+            <div className="p-4 text-center text-sm text-muted">
+              Nenhuma reserva encontrada.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ░░░ 3 — Reserva Selecionada (mostra depois do clique) ░░░ */}
+      {pickedReservation && (
+        <div className="mt-5 p-4 surface-input rounded-xl flex items-center justify-between">
+          <div>
+            <p className="font-semibold text-emphasis">
+              #{pickedReservation.id.slice(0, 6)} — {pickedReservation.guestOrCompany}
+            </p>
+            <p className="text-sm text-muted">
+              Quarto {pickedReservation.room} • {pickedReservation.checkIn} → {pickedReservation.checkOut}
+            </p>
+          </div>
+
+          <button
+            className="text-muted hover:text-red-500 transition"
+            onClick={() => {
+              setPickedReservation(null);
+              setReceiptSearch("");
+            }}
+          >
+            <X size={18} />
+          </button>
+        </div>
+      )}
+
+      {/* ░░░ 4 — Botão Gerar PDF ░░░ */}
+      <button
+        className="btn-primary mt-4 w-full"
+        disabled={!pickedReservation}
+        onClick={() => {
+          if (!pickedReservation) return;
+          generateReceiptPDF(pickedReservation.id);
+        }}
+      >
+        Gerar PDF
+      </button>
+
+    </div>
+  </div>
+)}
+
     </div>
   );
 }

@@ -76,28 +76,29 @@ def checkin_room(room_id: str, payload: dict = Body(...)):
         # 1) Garante que o quarto existe
         room_ref = db.collection("rooms").document(room_id)
         room_snap = room_ref.get()
-        if not room_snap.exists:
+        if not room_snap.exists():
             raise HTTPException(status_code=404, detail="Quarto não encontrado")
 
         room_data = room_snap.to_dict() or {}
         room_number = room_data.get("number") or room_data.get("identifier") or room_id
 
-        # 2) Extrai dados básicos enviados pelo front
-        guest_name = payload.get("guestName")      # ou nome digitado
+        # 2) Dados enviados pelo front
+        guest_name = payload.get("guestName")
         guest_cpf = payload.get("guestCPF")
         notes = payload.get("notes", "")
 
-        check_in = payload.get("checkInDate")      # "yyyy-MM-dd"
-        check_out = payload.get("checkOutDate")    # "yyyy-MM-dd"
+        # 🔥 AQUI: pegamos corretamente as datas enviadas
+        check_in = payload.get("checkInDate")      # "yyyy-mm-dd"
+        check_out = payload.get("checkOutDate")    # "yyyy-mm-dd"
 
         companions = payload.get("companions", [])
         companions_count = len(companions) if isinstance(companions, list) else 0
-        total_guests = 1 + companions_count  # hóspede + acompanhantes
+        total_guests = 1 + companions_count
 
         company_name = payload.get("companyName")
-        company_id = payload.get("companyId")  # se estiver usando id de empresa
+        company_id = payload.get("companyId")
 
-        # 3) Monta documento da reserva
+        # 3) Documento da reserva 100% compatível com reserva list page
         reservation_data = {
             "createdAt": firestore.SERVER_TIMESTAMP,
             "roomId": room_id,
@@ -111,8 +112,10 @@ def checkin_room(room_id: str, payload: dict = Body(...)):
             "companyName": company_name,
             "companyId": company_id,
 
+            # 🔥 SALVO DO JEITO CERTO!
             "checkIn": check_in,
             "checkOut": check_out,
+
             "notes": notes,
 
             # status iniciais
@@ -124,11 +127,11 @@ def checkin_room(room_id: str, payload: dict = Body(...)):
             "value": 0,
         }
 
-        # 4) Cria a reserva
+        # 4) Salvar reserva
         res_ref = db.collection("reservations").document()
         res_ref.set(reservation_data)
 
-        # 5) Atualiza status do quarto -> ocupado
+        # 5) Atualizar status do quarto
         update_room_status(room_id, "ocupado")
 
         return {

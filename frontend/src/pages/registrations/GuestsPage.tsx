@@ -459,7 +459,7 @@ async function handleDelete(guestToDelete: Guest) {
             </div>
              <div className="grid gap-1 text-xs text-muted-strong">
               <span>CPF: {maskCPF(g.cpf)}</span>
-              <span>Quarto: {g.roomNumber}</span>
+              <span>Telefone: {g.phone}</span>
                <span>E-mail: {g.email}</span>
  </div>
  </div>
