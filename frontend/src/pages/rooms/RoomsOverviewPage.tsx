@@ -1354,6 +1354,21 @@ function maskCNPJ(value: string) {
     .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
 }
 
+function maskPhone(value: string) {
+  // Remove tudo que não seja número
+  const cleaned = value.replace(/\D/g, "").slice(0, 11); // 🔥 máximo 11 dígitos
+
+  // Aplica máscara progressivamente
+  if (cleaned.length <= 2) {
+    return `(${cleaned}`;
+  }
+  if (cleaned.length <= 7) {
+    return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2)}`;
+  }
+  return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7)}`;
+}
+
+
   // Carrega empresas quando abrir o modal de check-in
 // Carrega empresas E HÓSPEDES CADASTRADOS quando abrir o modal de check-in
 useEffect(() => {
@@ -2611,18 +2626,20 @@ await updateDoc(roomRefFS, {
                       <label className="flex flex-col space-y-2">
                         <span className="text-sm font-medium">Telefone</span>
                         <input
-                          type="text"
-                          name="guestPhone"
-                          className="surface-input"
-                          placeholder="(00) 00000-0000"
-                          value={checkinForm.guestPhone}
-                          onChange={(e) =>
-                            setCheckinForm((prev) => ({
-                              ...prev,
-                              guestPhone: e.target.value,
-                            }))
-                          }
-                        />
+  type="text"
+  name="guestPhone"
+  className="surface-input"
+  placeholder="(00) 00000-0000"
+  value={checkinForm.guestPhone}
+  onChange={(e) =>
+    setCheckinForm((prev) => ({
+      ...prev,
+      guestPhone: maskPhone(e.target.value),
+    }))
+  }
+/>
+
+
                       </label>
                     </div>
                   )}
@@ -3087,16 +3104,17 @@ await updateDoc(roomRefFS, {
                         <label className="block text-sm font-medium">
                           Telefone
                           <input
-                            className="surface-input mt-2"
-                            value={checkinForm.companyPhone || ""}
-                            onChange={(e) =>
-                              setCheckinForm((prev) => ({
-                                ...prev,
-                                companyPhone: e.target.value,
-                              }))
-                            }
-                            placeholder="(00) 00000-0000"
-                          />
+  className="surface-input mt-2"
+  value={checkinForm.companyPhone || ""}    
+  onChange={(e) =>
+    setCheckinForm(prev => ({
+      ...prev,
+      companyPhone: maskPhone(e.target.value),
+    }))
+  }
+  placeholder="(00) 00000-0000"
+/>
+
                         </label>
                       </div>
                     )}

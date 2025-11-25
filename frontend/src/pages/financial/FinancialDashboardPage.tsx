@@ -11,10 +11,13 @@ const baseUrl = "https://pousada-backend-iccs.onrender.com/api";
 interface ReceivableItem {
   id: string;
   name: string;
+  companyName?: string;
+  companyId?: string | null;
   dueDate?: string;
   amount: string | number;
   status: string;
 }
+
 
 interface FinancialData {
   kpis: {
@@ -238,11 +241,13 @@ const {
             <p className="text-sm text-muted italic">Nenhum registro corporativo.</p>
           ) : (
             <>
-              <div className="mt-4 hidden overflow-x-auto md:block">
+              <div className="mt-4 hidden md:block overflow-x-visible">
+
                 <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-800">
                   <thead>
                     <tr>
                       <th className="px-4 py-3">Cliente</th>
+                      <th className="px-4 py-3">Empresa</th>
                       <th className="px-4 py-3">Vencimento</th>
                       <th className="px-4 py-3">Valor</th>
                       <th className="px-4 py-3">Status</th>
@@ -251,16 +256,20 @@ const {
                   <tbody>
                     {receivablesCompanies.map((r) => (
                       <tr key={r.id}>
-                        <td className="px-4 py-3">{r.name}</td>
-                        <td className="px-4 py-3 text-muted">{formatDateToBR(r.dueDate)}</td>
-                        <td className="px-4 py-3">{r.amount}</td>
-                        <td className="px-4 py-3">
-                          <StatusBadge
-                            label={r.status}
-                            status={r.status === "Pago" ? "success" : "warning"}
-                          />
-                        </td>
-                      </tr>
+  <td className="px-3 py-3 whitespace-nowrap">{r.name}</td>
+  <td className="px-3 py-3 whitespace-nowrap">{r.companyName}</td>
+  <td className="px-3 py-3 whitespace-nowrap text-muted">
+    {formatDateToBR(r.dueDate)}
+  </td>
+  <td className="px-3 py-3 whitespace-nowrap">{r.amount}</td>
+  <td className="px-3 py-3 whitespace-nowrap">
+    <StatusBadge
+      label={r.status}
+      status={r.status === "Pago" ? "success" : "warning"}
+    />
+  </td>
+</tr>
+
                     ))}
                   </tbody>
                 </table>
@@ -271,6 +280,8 @@ const {
                 {receivablesCompanies.map((r) => (
                   <div key={r.id} className="surface-toolbar flex flex-col gap-2 p-4">
                     <p className="text-emphasis font-semibold">{r.name}</p>
+                    <p>Empresa: {r.companyName}</p>
+
                     <div className="text-sm text-muted space-y-1">
                       <p>Vencimento: {formatDateToBR(r.dueDate)}</p>
                       <p>Valor: R$ {r.amount}</p>

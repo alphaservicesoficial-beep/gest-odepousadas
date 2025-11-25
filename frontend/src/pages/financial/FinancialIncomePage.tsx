@@ -2,6 +2,7 @@ import { useState, useEffect, FormEvent } from "react";
 import * as XLSX from "xlsx";
 import { X } from "lucide-react";
 import Card from "../../components/ui/Card";
+import { Calendar } from "lucide-react";
 
 const baseUrl = "https://pousada-backend-iccs.onrender.com/api";
 
@@ -56,11 +57,15 @@ function FinancialIncomePage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        description: formValues.description,
-        date: formValues.date,
-        amount: parseFloat(formValues.amount),
-        method: formValues.method,
-      }),
+  description: formValues.description,
+  date: (() => {
+    const [d, m, y] = formValues.date.split("/");
+    return `${y}-${m}-${d}`;
+  })(),
+  amount: parseFloat(formValues.amount),
+  method: selectedPayment,
+}),
+
     });
     setIsCreateModalOpen(false);
     setFormValues({ description: "", date: "", amount: "", method: "" });
@@ -74,8 +79,32 @@ function FinancialIncomePage() {
     XLSX.writeFile(wb, "receitas.xlsx");
   };
 
+  const [selectedPayment, setSelectedPayment] = useState("");
+
+
+  const maskDateBR = (value: string) => {
+  return value
+    .replace(/\D/g, "")
+    .replace(/(\d{2})(\d)/, "$1/$2")
+    .replace(/(\d{2})(\d)/, "$1/$2")
+    .slice(0, 10);
+};
+
+const toISO = (value: string) => {
+  if (!value) return "";
+  const [d, m, y] = value.split("/");
+  return `${y}-${m}-${d}`;
+};
+
+const toBR = (value: string) => {
+  if (!value) return "";
+  const [y, m, d] = value.split("-");
+  return `${d}/${m}/${y}`;
+};
+
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-0">
       <Card title="Controle de Receitas" description="Visualize e registre novas entradas de receita.">
         <div className="flex flex-col gap-2 sm:flex-row">
           <button className="btn-primary" onClick={() => setIsCreateModalOpen(true)}>
@@ -137,46 +166,105 @@ function FinancialIncomePage() {
             </div>
 
             <form className="mt-6 space-y-4" onSubmit={handleCreateSubmit}>
-              <input
-                placeholder="Descrição"
-                className="surface-input"
-                required
-                value={formValues.description}
-                onChange={(e) => setFormValues({ ...formValues, description: e.target.value })}
-              />
-              <input
-                type="date"
-                className="surface-input"
-                required
-                value={formValues.date}
-                onChange={(e) => setFormValues({ ...formValues, date: e.target.value })}
-              />
-              <input
-                placeholder="Valor"
-                className="surface-input"
-                required
-                type="number"
-                min="0"
-                step="0.01"
-                value={formValues.amount}
-                onChange={(e) => setFormValues({ ...formValues, amount: e.target.value })}
-              />
-              <input
-                placeholder="Método"
-                className="surface-input"
-                required
-                value={formValues.method}
-                onChange={(e) => setFormValues({ ...formValues, method: e.target.value })}
-              />
-              <div className="flex justify-end gap-3">
-                <button type="button" className="btn-secondary" onClick={() => setIsCreateModalOpen(false)}>
-                  Cancelar
-                </button>
-                <button type="submit" className="btn-primary">
-                  Salvar
-                </button>
-              </div>
-            </form>
+  {/* DESCRIÇÃO */}
+  <input
+    placeholder="Descrição"
+    className="surface-input"
+    required
+    value={formValues.description}
+    onChange={(e) =>
+      setFormValues({ ...formValues, description: e.target.value })
+    }
+  />
+
+  {/* DATA COM MÁSCARA BR + CALENDÁRIO */}
+  <div className="relative w-full">
+  {/* Campo VISÍVEL com máscara */}
+  <input
+    type="text"
+    placeholder="DD/MM/AAAA"
+    className="surface-input pr-10"
+    value={formValues.date}
+    onChange={(e) => {
+      const formatted = maskDateBR(e.target.value);
+      setFormValues({ ...formValues, date: formatted });
+    }}
+    required
+  />
+
+  {/* Ícone do calendário */}
+  <Calendar
+    size={18}
+    className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-500 pointer-events-none"
+  />
+
+  {/* Input DATE invisível para abrir o seletor nativo */}
+  <input
+    type="date"
+    className="absolute inset-0 opacity-0 cursor-pointer"
+    value={toISO(formValues.date)}
+    onChange={(e) =>
+      setFormValues({ ...formValues, date: toBR(e.target.value) })
+    }
+    required
+  />
+</div>
+
+
+  {/* VALOR */}
+  <input
+    placeholder="Valor"
+    className="surface-input"
+    required
+    type="number"
+    min="0"
+    step="0.01"
+    value={formValues.amount}
+    onChange={(e) =>
+      setFormValues({ ...formValues, amount: e.target.value })
+    }
+  />
+
+  {/* SELECT DE MÉTODO */}
+ <div className="space-y-1">
+  <label className="text-sm font-medium">Método de pagamento</label>
+
+ <div className="grid grid-cols-3 gap-2">
+  {["Dinheiro", "Cartão", "Pix"].map((m) => (
+    <button
+      key={m}
+      type="button"
+      onClick={() => setSelectedPayment(m)}
+      className={`
+        w-full py-2 rounded-xl border text-sm font-medium transition-all
+        ${selectedPayment === m 
+          ? "border-blue-400 bg-blue-50 text-slate-900 shadow-sm" 
+          : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100 hover:border-slate-400"}
+      `}
+    >
+      {m}
+    </button>
+  ))}
+</div>
+
+
+</div>
+
+
+  <div className="flex justify-end gap-3">
+    <button
+      type="button"
+      className="btn-secondary"
+      onClick={() => setIsCreateModalOpen(false)}
+    >
+      Cancelar
+    </button>
+    <button type="submit" className="btn-primary">
+      Salvar
+    </button>
+  </div>
+</form>
+
           </div>
         </div>
       )}

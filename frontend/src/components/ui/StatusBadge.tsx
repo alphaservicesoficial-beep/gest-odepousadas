@@ -19,7 +19,7 @@ export function StatusBadge({ label, status = "default" }: StatusBadgeProps) {
   return (
     <span
       className={clsx(
-        "inline-flex items-center rounded-full px-3 py-1 text-xs font-medium uppercase tracking-wide",
+       "inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-medium uppercase tracking-wide min-w-[90px]",
         statusClasses[status],
       )}
     >

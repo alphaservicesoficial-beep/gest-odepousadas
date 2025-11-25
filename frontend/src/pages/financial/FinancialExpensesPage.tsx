@@ -1,5 +1,7 @@
 import { useEffect, useState, FormEvent } from "react";
 import { X } from "lucide-react";
+import { Calendar } from "lucide-react";
+
 import Card from "../../components/ui/Card";
 
 const baseUrl = "https://pousada-backend-iccs.onrender.com/api";
@@ -98,8 +100,29 @@ function FinancialExpensesPage() {
 
   const total = expenses.reduce((acc, e) => acc + (e.amount || 0), 0);
 
+
+  const maskDateBR = (value: string) => {
+  return value
+    .replace(/\D/g, "")
+    .replace(/(\d{2})(\d)/, "$1/$2")
+    .replace(/(\d{2})(\d)/, "$1/$2")
+    .slice(0, 10);
+};
+
+const toISO = (value: string) => {
+  if (!value) return "";
+  const [d, m, y] = value.split("/");
+  return `${y}-${m}-${d}`;
+};
+
+const toBR = (value: string) => {
+  if (!value) return "";
+  const [y, m, d] = value.split("-");
+  return `${d}/${m}/${y}`;
+};
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-0">
       <Card
         title="Controle de Despesas"
         description="Registre e acompanhe despesas operacionais da propriedade."
@@ -203,13 +226,38 @@ function FinancialExpensesPage() {
 
               <label className="block text-sm font-medium text-muted-strong">
                 Data
-                <input
-                  type="date"
-                  required
-                  value={formValues.date}
-                  onChange={(e) => setFormValues((v) => ({ ...v, date: e.target.value }))}
-                  className="surface-input mt-2"
-                />
+                <div className="relative mt-2 w-full">
+  {/* Campo visível com máscara dd/mm/aaaa */}
+  <input
+    type="text"
+    placeholder="DD/MM/AAAA"
+    className="surface-input pr-10"
+    value={formValues.date}
+    onChange={(e) => {
+      const formatted = maskDateBR(e.target.value);
+      setFormValues((prev) => ({ ...prev, date: formatted }));
+    }}
+    required
+  />
+
+  {/* Ícone do calendário */}
+  <Calendar
+    size={18}
+    className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-500 pointer-events-none"
+  />
+
+  {/* Input invisível que abre o calendário */}
+  <input
+    type="date"
+    className="absolute inset-0 opacity-0 cursor-pointer"
+    value={toISO(formValues.date)}
+    onChange={(e) =>
+      setFormValues((prev) => ({ ...prev, date: toBR(e.target.value) }))
+    }
+    required
+  />
+</div>
+
               </label>
 
               <label className="block text-sm font-medium text-muted-strong">
