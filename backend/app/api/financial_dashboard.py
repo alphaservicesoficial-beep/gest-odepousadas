@@ -69,6 +69,8 @@ def get_financial_dashboard():
                 entry = {
                     "id": res.id,
                     "name": guest,
+                    "companyName": data.get("companyName") or "—",
+                    "companyId": data.get("companyId") or None,
                     "dueDate": due_date,
                     "amount": f"R$ {valor_total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
                     "status": "Em aberto",
@@ -82,6 +84,8 @@ def get_financial_dashboard():
                 entry = {
                     "id": res.id,
                     "name": guest,
+                    "companyName": data.get("companyName") or "—",
+                    "companyId": data.get("companyId") or None,
                     "dueDate": due_date,
                     "amount": f"R$ {valor_final:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
                     "status": "Pago",

@@ -1,9 +1,20 @@
-import { useEffect, useState } from "react";
+
+import { useEffect, useState, useMemo } from "react";
+import { X } from "lucide-react";
 import Card from "../../components/ui/Card";
 import { KpiCard } from "../../components/ui/KpiCard";
 import StatusBadge from "../../components/ui/StatusBadge";
 
 const baseUrl = "https://pousada-backend-iccs.onrender.com/api";
+
+// 🔹 Cada item do backend
+interface ReceivableItem {
+  id: string;
+  name: string;
+  dueDate?: string;
+  amount: string | number;
+  status: string;
+}
 
 interface FinancialData {
   kpis: {
@@ -14,23 +25,62 @@ interface FinancialData {
   };
   paymentOverview: { method: string; amount: string }[];
   insights: string[];
-  receivablesCompanies: any[];
-  receivablesGeneral: any[];
+    receivablesCompanies: any[];
+    receivablesGeneral: any[];
 }
 
-// 🔹 função utilitária para formatar datas no padrão brasileiro
+// 🔹 Formata data BR
 function formatDateToBR(dateStr?: string): string {
-  if (!dateStr) return "--";
+  if (!dateStr || dateStr === "--") return "—";
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) return dateStr;
   return date.toLocaleDateString("pt-BR", { timeZone: "UTC" });
 }
 
+// 🔹 "R$ 1.234,56" → 1234.56
+function parseBRL(value: string | number | null | undefined): number {
+  if (typeof value === "number") return value;
+  if (!value) return 0;
+
+  const clean = value
+    .toString()
+    .replace(/\s/g, "")
+    .replace("R$", "")
+    .replace(/\./g, "")
+    .replace(",", ".");
+
+  const n = parseFloat(clean);
+  return isNaN(n) ? 0 : n;
+}
+
+// 🔹 1234.56 → "R$ 1.234,56"
+function formatBRL(value: number): string {
+  return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+// 🔹 Agrupamento
+type CompanyGrouping = {
+  companyName: string;
+  totalAmount: number;
+  totalFormatted: string;
+  openAmount: number;
+  paidAmount: number;
+  anyOpen: boolean;
+  items: ReceivableItem[];
+  hasMultipleDueDates: boolean;
+  sampleDueDate?: string;
+};
+
 export default function FinancialDashboardPage() {
+  // 🔹 TODOS os Hooks ficam no topo SEMPRE
   const [data, setData] = useState<FinancialData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [selectedCompany, setSelectedCompany] =
+    useState<CompanyGrouping | null>(null);
+
+  // 🔹 Carregar dados
   useEffect(() => {
     async function loadData() {
       try {
@@ -39,7 +89,7 @@ export default function FinancialDashboardPage() {
         if (!res.ok) throw new Error("Erro ao carregar dados financeiros");
         const json = await res.json();
         setData(json);
-      } catch (err: any) {
+      } catch (err) {
         console.error(err);
         setError("Falha ao carregar dados financeiros.");
       } finally {
@@ -49,6 +99,58 @@ export default function FinancialDashboardPage() {
     loadData();
   }, []);
 
+  // 🔹 Agrupamento de EMPRESAS — agora SEMPRE executado no mesmo lugar
+  const groupedCompanies = useMemo<CompanyGrouping[]>(() => {
+    if (!data) return [];
+
+    const map = new Map<string, CompanyGrouping>();
+
+    data.receivablesCompanies.forEach((r) => {
+      const name = r.name || "—";
+      const amountNum = parseBRL(r.amount);
+      const isOpen = (r.status || "").toLowerCase().includes("aberto");
+      const isPaid = (r.status || "").toLowerCase().includes("pago");
+
+      const existing = map.get(name);
+
+      if (!existing) {
+        map.set(name, {
+          companyName: name,
+          totalAmount: amountNum,
+          openAmount: isOpen ? amountNum : 0,
+          paidAmount: isPaid ? amountNum : 0,
+          totalFormatted: "",
+          anyOpen: isOpen,
+          items: [r],
+          hasMultipleDueDates: false,
+          sampleDueDate: r.dueDate,
+        });
+      } else {
+        existing.totalAmount += amountNum;
+        if (isOpen) existing.openAmount += amountNum;
+        if (isPaid) existing.paidAmount += amountNum;
+        existing.items.push(r);
+
+        if (
+          existing.sampleDueDate &&
+          r.dueDate &&
+          r.dueDate !== existing.sampleDueDate
+        ) {
+          existing.hasMultipleDueDates = true;
+        }
+      }
+    });
+
+    return Array.from(map.values()).map((c) => ({
+      ...c,
+      totalFormatted: formatBRL(c.totalAmount),
+      anyOpen: c.openAmount > 0,
+    }));
+  }, [data]);
+
+  const closeCompanyModal = () => setSelectedCompany(null);
+
+  // 🔹 Renderização
   if (loading)
     return (
       <div className="flex h-[60vh] items-center justify-center text-muted animate-pulse">
@@ -61,8 +163,15 @@ export default function FinancialDashboardPage() {
 
   if (!data) return null;
 
-  const { kpis, paymentOverview, insights, receivablesCompanies, receivablesGeneral } = data;
+const {
+  kpis,
+  paymentOverview,
+  insights,
+  receivablesCompanies,  // ← ADICIONE ESTA LINHA
+  receivablesGeneral,
+} = data;
 
+ 
   return (
     <div className="space-y-6">
       {/* 🔹 Cabeçalho da página */}

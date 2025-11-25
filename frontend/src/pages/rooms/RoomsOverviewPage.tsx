@@ -1882,8 +1882,9 @@ const finalCompanyCNPJ =
 companyName: finalCompanyName,
 companyCNPJ: finalCompanyCNPJ,
 
-      checkInDate: checkinForm.checkInDate,
-      checkOutDate: checkinForm.checkOutDate,
+     checkInDate: toISO(checkinForm.checkInDate),
+checkOutDate: toISO(checkinForm.checkOutDate),
+
       notes: checkinForm.notes,
     };
 
