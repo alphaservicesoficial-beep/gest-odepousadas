@@ -16,7 +16,7 @@ app = FastAPI(title="Gestão de Pousadas API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # libera tudo
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
