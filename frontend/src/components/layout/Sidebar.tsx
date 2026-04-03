@@ -32,7 +32,7 @@ function Sidebar({
   // 🔹 Regras de acesso
   const restricted = {
     admin: [] as string[],
-    recepcionista: ["/financeiro"],
+  recepcionista: ["/financeiro", "/admin"],
     camareira: [
       "/dashboard",
       "/cadastros",

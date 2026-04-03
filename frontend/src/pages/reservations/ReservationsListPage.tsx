@@ -24,6 +24,7 @@ function formatCurrency(value: string | number): string {
 type Reservation = {
   id: string;
   guestOrCompany: string;
+  companyName?: string;
   room: string;
   guestsCount: number;
   checkIn: string;
@@ -152,6 +153,10 @@ function ReservationsListPage() {
       return passText && passPeriod;
     });
   }, [reservations, search, fromDate, toDate]);
+
+
+
+  
 
   // ---------- AÇÕES EXISTENTES ----------
   const openModal = (reservationId: string) => {
@@ -359,7 +364,9 @@ function ReservationsListPage() {
           <td className="px-4 py-3 text-xs font-semibold text-muted-strong">
             #{r.id.slice(0, 6)}
           </td>
-          <td className="px-4 py-3">{r.guestOrCompany}</td>
+          <td className="px-4 py-3">
+  {r.companyName ? r.companyName : r.guestOrCompany}
+</td>
           <td className="px-4 py-3">{r.room}</td>
           <td className="px-4 py-3 text-center">{r.guestsCount}</td>
 

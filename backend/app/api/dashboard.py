@@ -112,7 +112,7 @@ def get_dashboard():
                 or data.get("guestName")
                 or data.get("guest")
                 or data.get("name")
-                or data.get("companyName")
+                or data.get("me")
                 or data.get("company")
                 or "—"
             )

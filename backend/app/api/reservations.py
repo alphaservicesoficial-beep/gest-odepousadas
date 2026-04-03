@@ -85,7 +85,8 @@ def list_reservations():
 
             reservations.append({
                 "id": doc.id,
-                "guestOrCompany": data.get("guestName") or data.get("companyName") or "—",
+                "guestOrCompany": data.get("guestName") or "—",
+                "companyName": data.get("companyName") or None,
                 # 👇 agora devolve sempre o número do quarto (ex.: "105")
                 "room": resolve_room_number(data),
                 "guestsCount": data.get("guests", 0),
