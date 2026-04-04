@@ -135,17 +135,22 @@ function ReservationsListPage() {
 
   // ---------- BUSCA + PERÍODO ----------
   const filtered = useMemo(() => {
-    const q = normalize(search);
+    const raw = search.trim();
+const q = normalize(raw.replace("#", ""));
     return reservations.filter((r) => {
       // busca por hóspede/empresa, id e quarto
       const hay =
-        normalize(r.guestOrCompany || "") +
-        " " +
-        normalize(r.id || "") +
-        " " +
-        normalize(String(r.room || ""));
+  normalize(r.guestOrCompany || "") +
+  " " +
+  normalize(r.companyName || "") +
+  " " +
+  normalize(r.id || "") +
+  " " +
+  normalize(String(r.room || ""));
 
-      const passText = q ? hay.includes(q) : true;
+      const idNormalized = normalize(r.id || "");
+const passId = q ? idNormalized.includes(q) : true;
+const passText = q ? hay.includes(q) || passId : true;
 
       const passPeriod =
         fromDate && toDate ? inRange(r.checkIn, fromDate, toDate) : true;

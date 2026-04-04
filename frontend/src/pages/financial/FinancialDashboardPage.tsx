@@ -109,7 +109,7 @@ export default function FinancialDashboardPage() {
     const map = new Map<string, CompanyGrouping>();
 
     data.receivablesCompanies.forEach((r) => {
-      const name = r.name || "—";
+      const name = r.companyName || "—";
       const amountNum = parseBRL(r.amount);
       const isOpen = (r.status || "").toLowerCase().includes("aberto");
       const isPaid = (r.status || "").toLowerCase().includes("pago");
@@ -246,26 +246,31 @@ const {
                 <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-800">
                   <thead>
                     <tr>
-                      <th className="px-4 py-3">Cliente</th>
                       <th className="px-4 py-3">Empresa</th>
-                      <th className="px-4 py-3">Vencimento</th>
-                      <th className="px-4 py-3">Valor</th>
-                      <th className="px-4 py-3">Status</th>
+<th className="px-4 py-3">Vencimento</th>
+<th className="px-4 py-3">Total</th>
+<th className="px-4 py-3">Status</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {receivablesCompanies.map((r) => (
-                      <tr key={r.id}>
-  <td className="px-3 py-3 whitespace-nowrap">{r.name}</td>
-  <td className="px-3 py-3 whitespace-nowrap">{r.companyName}</td>
-  <td className="px-3 py-3 whitespace-nowrap text-muted">
-    {formatDateToBR(r.dueDate)}
+                    {groupedCompanies.map((c) => (
+                      <tr key={c.companyName}>
+  <td className="px-3 py-3 whitespace-nowrap">
+    {c.companyName}
   </td>
-  <td className="px-3 py-3 whitespace-nowrap">{r.amount}</td>
+
+  <td className="px-3 py-3 whitespace-nowrap text-muted">
+    {c.hasMultipleDueDates ? "Múltiplos" : formatDateToBR(c.sampleDueDate)}
+  </td>
+
+  <td className="px-3 py-3 whitespace-nowrap">
+    {c.totalFormatted}
+  </td>
+
   <td className="px-3 py-3 whitespace-nowrap">
     <StatusBadge
-      label={r.status}
-      status={r.status === "Pago" ? "success" : "warning"}
+      label={c.anyOpen ? "Em aberto" : "Pago"}
+      status={c.anyOpen ? "warning" : "success"}
     />
   </td>
 </tr>
@@ -277,24 +282,39 @@ const {
 
               {/* 📱 mobile */}
               <div className="mt-4 space-y-3 md:hidden">
-                {receivablesCompanies.map((r) => (
-                  <div key={r.id} className="surface-toolbar flex flex-col gap-2 p-4">
-                    <p className="text-emphasis font-semibold">{r.name}</p>
-                    <p>Empresa: {r.companyName}</p>
+                {groupedCompanies.map((c) => (
+  <div
+    key={c.companyName}
+    className="surface-toolbar flex flex-col gap-2 p-4"
+  >
+    {/* Nome da empresa */}
+    <p className="text-emphasis font-semibold">
+      {c.companyName}
+    </p>
 
-                    <div className="text-sm text-muted space-y-1">
-                      <p>Vencimento: {formatDateToBR(r.dueDate)}</p>
-                      <p>Valor: R$ {r.amount}</p>
-                      <p>
-                        Status:{" "}
-                        <StatusBadge
-                          label={r.status}
-                          status={r.status === "Pago" ? "success" : "warning"}
-                        />
-                      </p>
-                    </div>
-                  </div>
-                ))}
+    <div className="text-sm text-muted space-y-1">
+      {/* Vencimento */}
+      <p>
+        Vencimento:{" "}
+        {c.hasMultipleDueDates
+          ? "Múltiplos"
+          : formatDateToBR(c.sampleDueDate)}
+      </p>
+
+      {/* Valor total */}
+      <p>Valor: {c.totalFormatted}</p>
+
+      {/* Status */}
+      <p>
+        Status:{" "}
+        <StatusBadge
+          label={c.anyOpen ? "Em aberto" : "Pago"}
+          status={c.anyOpen ? "warning" : "success"}
+        />
+      </p>
+    </div>
+  </div>
+))}
               </div>
             </>
           )}

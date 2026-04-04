@@ -150,7 +150,14 @@ def get_dashboard():
             # 🔹 Check-ins de hoje (APENAS PENDENTES)
             check_in_status = data.get("checkInStatus", "").lower()
 
-            if check_in == today and check_in_status != "concluido":
+            reservation_status = data.get("reservationStatus", "").lower()
+            check_in_status = data.get("checkInStatus", "").lower()
+
+            if (
+                check_in == today
+                and check_in_status != "concluido"
+                and reservation_status != "cancelado"
+            ):
                 checkins_today.append({
                     "id": res.id,
                     "guest": guest_name,
@@ -160,7 +167,14 @@ def get_dashboard():
             # 🔹 Check-outs de hoje (APENAS PENDENTES)
             check_out_status = data.get("checkOutStatus", "").lower()
 
-            if check_out == today and check_out_status != "concluido":
+            reservation_status = data.get("reservationStatus", "").lower()
+            check_out_status = data.get("checkOutStatus", "").lower()
+
+            if (
+                check_out == today
+                and check_out_status != "concluido"
+                and reservation_status != "cancelado"
+            ):
                 checkouts_today.append({
                     "id": res.id,
                     "guest": guest_name,
