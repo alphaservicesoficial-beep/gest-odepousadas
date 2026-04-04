@@ -147,16 +147,20 @@ def get_dashboard():
                     .strip()
                 )
 
-            # 🔹 Check-ins de hoje
-            if check_in == today:
+            # 🔹 Check-ins de hoje (APENAS PENDENTES)
+            check_in_status = data.get("checkInStatus", "").lower()
+
+            if check_in == today and check_in_status != "concluido":
                 checkins_today.append({
                     "id": res.id,
                     "guest": guest_name,
                     "room": room_name,
                 })
 
-            # 🔹 Check-outs de hoje
-            if check_out == today:
+            # 🔹 Check-outs de hoje (APENAS PENDENTES)
+            check_out_status = data.get("checkOutStatus", "").lower()
+
+            if check_out == today and check_out_status != "concluido":
                 checkouts_today.append({
                     "id": res.id,
                     "guest": guest_name,
