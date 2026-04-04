@@ -68,6 +68,8 @@ type Guest = {
   value?: string;
   notes?: string;
 
+  actualCheckOut?: string;
+
   companions?: {
     name: string;
     cpf: string;
@@ -1455,6 +1457,7 @@ useEffect(() => {
         roomNumber: data.roomNumber ?? "",
         checkIn: data.checkIn ?? "",
         checkOut: data.checkOut ?? "",
+        actualCheckOut: data.actualCheckOut ?? "",
         guests: data.guests ?? 1,
         checkInStatus: data.checkInStatus ?? "",
         checkOutStatus: data.checkOutStatus ?? "",
@@ -1575,6 +1578,8 @@ useEffect(() => {
           roomNumber: data.roomNumber ?? "",
           checkIn: data.checkIn ?? "",
           checkOut: data.checkOut ?? "",
+          actualCheckOut: data.actualCheckOut ?? "",
+
           guests: data.guests ?? 1,
 
           value: data.value ?? "",
@@ -1636,6 +1641,7 @@ useEffect(() => {
             roomNumber: data.roomNumber ?? "",
             checkIn: data.checkIn ?? "",
             checkOut: data.checkOut ?? "",
+            actualCheckOut: data.actualCheckOut ?? "",
             guests: data.guests ?? 1,
             checkInStatus: data.checkInStatus ?? "",
             checkOutStatus: data.checkOutStatus ?? "",

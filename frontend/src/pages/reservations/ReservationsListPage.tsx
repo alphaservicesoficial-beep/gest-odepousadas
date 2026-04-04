@@ -35,6 +35,7 @@ type Reservation = {
   total: string | number;
   checkInStatus: string;
   checkOutStatus: string;
+  actualCheckOut?: string;
 };
 
 type PeriodKey = "ontem" | "hoje" | "amanha" | "prox7" | "todos";
@@ -96,8 +97,9 @@ function ReservationsListPage() {
   Array.isArray(data)
     ? data.map(r => ({
         ...r,
-        checkIn: toBR(r.checkIn),
-        checkOut: toBR(r.checkOut)
+        checkIn: r.checkIn,
+        checkOut: r.checkOut,
+        actualCheckOut: r.actualCheckOut ?? ""
       }))
     : []
 );
@@ -405,7 +407,9 @@ const passText = q ? hay.includes(q) || passId : true;
           </td>
 
           <td className="px-4 py-3">
-            {r.checkOut}
+            {r.checkOutStatus === "concluido" && r.actualCheckOut
+  ? toBR(r.actualCheckOut)
+  : r.checkOut}
             <div className="mt-1">
               <StatusBadge
                 label={r.checkOutStatus}
@@ -497,7 +501,10 @@ const passText = q ? hay.includes(q) || passId : true;
             />
           </p>
           <p>
-            Check-out: {r.checkOut}{" "}
+  Check-out:{" "}
+  {r.checkOutStatus === "concluido" && r.actualCheckOut
+    ? toBR(r.actualCheckOut)
+    : r.checkOut}{" "}
             <StatusBadge
               label={r.checkOutStatus}
               status={

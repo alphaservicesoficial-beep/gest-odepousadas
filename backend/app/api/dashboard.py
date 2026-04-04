@@ -147,10 +147,8 @@ def get_dashboard():
                     .strip()
                 )
 
-            # 🔹 Check-ins de hoje (APENAS PENDENTES)
-            check_in_status = data.get("checkInStatus", "").lower()
-
-            reservation_status = data.get("reservationStatus", "").lower()
+           
+            reservation_status = data.get("status", "").lower()
             check_in_status = data.get("checkInStatus", "").lower()
 
             if (
@@ -167,7 +165,7 @@ def get_dashboard():
             # 🔹 Check-outs de hoje (APENAS PENDENTES)
             check_out_status = data.get("checkOutStatus", "").lower()
 
-            reservation_status = data.get("reservationStatus", "").lower()
+            reservation_status = data.get("status", "").lower()
             check_out_status = data.get("checkOutStatus", "").lower()
 
             if (

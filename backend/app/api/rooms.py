@@ -176,9 +176,12 @@ def checkout_room(room_id: str):
         res_ref = db.collection("reservations").document(reservation.id)
 
         # 2. Atualizar reserva
+        from datetime import datetime
+
         res_ref.update({
             "checkOutStatus": "concluido",
-            "status": "finalizada"
+            "status": "finalizada",
+            "actualCheckOut": datetime.utcnow().isoformat()
         })
 
         # 3. Liberar quarto
